@@ -10,52 +10,67 @@
 <title>BTC On-Chain Analytics</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
-:root {
-  --bg:#0a0a0f; --bg2:#111118; --card:#16161f; --border:#242432;
-  --orange:#f7931a; --white:#f0f0f5; --muted:#6b6b85;
-  --green:#00e676; --red:#ff4757; --blue:#4a9eff; --purple:#bc8cff; --yellow:#ffd600;
-}
+:root{--bg:#0a0a0f;--bg2:#111118;--card:#16161f;--border:#242432;--orange:#f7931a;--white:#f0f0f5;--muted:#6b6b85;--green:#00e676;--red:#ff4757;--blue:#4a9eff;--purple:#bc8cff;--yellow:#ffd600}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{background:var(--bg);color:var(--white);font-family:'Syne',sans-serif;min-height:100vh;overflow-x:hidden}
-
-.header{position:sticky;top:0;z-index:100;background:rgba(10,10,15,0.95);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;justify-content:space-between}
+.header{position:sticky;top:0;z-index:100;background:rgba(10,10,15,0.96);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;justify-content:space-between}
 .logo{display:flex;align-items:center;gap:10px}
 .logo-icon{width:34px;height:34px;background:var(--orange);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#000}
 .logo-text{font-size:15px;font-weight:800}
-.logo-sub{font-size:10px;color:var(--muted);font-family:'Space Mono',monospace}
-.refresh-btn{background:var(--card);border:1px solid var(--border);color:var(--white);padding:8px 14px;border-radius:8px;font-size:12px;font-family:'Space Mono',monospace;cursor:pointer;transition:all 0.2s}
-.refresh-btn:active{transform:scale(0.95)}
+.logo-sub{font-size:9px;color:var(--muted);font-family:'Space Mono',monospace}
+.hright{display:flex;align-items:center;gap:8px}
+.live-dot{width:7px;height:7px;background:var(--green);border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+.refresh-btn{background:var(--card);border:1px solid var(--border);color:var(--white);padding:7px 12px;border-radius:8px;font-size:13px;font-family:'Space Mono',monospace;cursor:pointer}
 .refresh-btn.spin{color:var(--orange);border-color:var(--orange)}
-
-.nav{display:flex;gap:4px;padding:10px 14px;overflow-x:auto;scrollbar-width:none;background:var(--bg);border-bottom:1px solid var(--border)}
+.nav{display:flex;gap:4px;padding:10px 12px;overflow-x:auto;scrollbar-width:none;background:var(--bg);border-bottom:1px solid var(--border)}
 .nav::-webkit-scrollbar{display:none}
-.nav-btn{padding:7px 14px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:11px;font-family:'Space Mono',monospace;cursor:pointer;white-space:nowrap;transition:all 0.2s;flex-shrink:0}
+.nav-btn{padding:7px 14px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:11px;font-family:'Space Mono',monospace;cursor:pointer;white-space:nowrap;flex-shrink:0}
 .nav-btn.active{background:var(--orange);border-color:var(--orange);color:#000;font-weight:700}
-
-.content{padding:14px;max-width:600px;margin:0 auto;padding-bottom:40px}
+.content{padding:12px;max-width:600px;margin:0 auto;padding-bottom:40px}
 .screen{display:none}
 .screen.active{display:block;animation:fadeIn 0.25s ease}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 
-/* Price Hero */
-.price-hero{background:linear-gradient(135deg,#16161f,#1a1a28);border:1px solid var(--border);border-radius:20px;padding:24px 20px;margin-bottom:14px;position:relative;overflow:hidden}
-.price-hero::before{content:'₿';position:absolute;right:-10px;top:-20px;font-size:110px;color:rgba(247,147,26,0.06);font-weight:800;pointer-events:none}
-.price-label{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px}
-.price-main{font-size:40px;font-weight:800;letter-spacing:-1px;line-height:1;margin-bottom:10px}
-.price-change{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:20px;font-family:'Space Mono',monospace;font-size:13px;font-weight:700}
+/* Hero */
+.hero{background:linear-gradient(135deg,#16161f,#1a1a28);border:1px solid var(--border);border-radius:20px;padding:20px 18px;margin-bottom:12px;position:relative;overflow:hidden}
+.hero::before{content:'₿';position:absolute;right:-8px;top:-18px;font-size:100px;color:rgba(247,147,26,0.05);font-weight:800;pointer-events:none}
+.price-label{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:5px}
+.price-main{font-size:38px;font-weight:800;letter-spacing:-1px;line-height:1;margin-bottom:8px}
+.changes{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.chip{display:inline-flex;align-items:center;gap:3px;padding:4px 9px;border-radius:20px;font-family:'Space Mono',monospace;font-size:11px;font-weight:700}
 .up{background:rgba(0,230,118,0.15);color:var(--green)}
 .down{background:rgba(255,71,87,0.15);color:var(--red)}
-.price-row{display:flex;gap:0;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
-.price-item{flex:1;text-align:center;border-right:1px solid var(--border)}
-.price-item:last-child{border-right:none}
-.pi-label{font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);margin-bottom:4px;text-transform:uppercase}
-.pi-val{font-size:12px;font-weight:700}
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--border);padding-top:12px}
+.pi{text-align:center;padding:0 4px;border-right:1px solid var(--border)}
+.pi:last-child{border-right:none}
+.pi-l{font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);margin-bottom:3px;text-transform:uppercase}
+.pi-v{font-size:12px;font-weight:700}
+.bar-wrap{margin-top:12px}
+.bar-labels{display:flex;justify-content:space-between;font-size:9px;color:var(--muted);font-family:'Space Mono',monospace;margin-bottom:4px}
+.bar-bg{height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;transition:width 1s ease}
 
-/* Cards */
-.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
-.kpi-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px}
-.kpi-label{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}
-.kpi-value{font-size:24px;font-weight:800;line-height:1;margin-bottom:6px}
+/* Fear & Greed */
+.fg-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:12px;display:flex;align-items:center;gap:16px}
+.fg-gauge{width:72px;height:72px;flex-shrink:0;position:relative}
+.fg-gauge svg{transform:rotate(-90deg)}
+.fg-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.fg-num{font-size:22px;font-weight:800;font-family:'Space Mono',monospace;line-height:1}
+.fg-info{flex:1}
+.fg-ttl{font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px}
+.fg-lbl{font-size:17px;font-weight:800;margin-bottom:5px}
+.fg-hist{display:flex;gap:3px;margin-top:5px}
+.fg-dot{width:18px;height:4px;border-radius:2px;opacity:0.8}
+
+/* KPI Grid */
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px}
+.kpi-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:13px}
+.kpi-l{font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:5px}
+.kpi-v{font-size:22px;font-weight:800;line-height:1;margin-bottom:5px}
+.kpi-sub{font-size:10px;color:var(--muted);font-family:'Space Mono',monospace;margin-top:3px}
+
+/* Badges */
 .badge{display:inline-block;padding:3px 8px;border-radius:6px;font-size:10px;font-family:'Space Mono',monospace;font-weight:700}
 .sig-red{background:rgba(255,71,87,0.2);color:var(--red)}
 .sig-yellow{background:rgba(255,214,0,0.15);color:var(--yellow)}
@@ -63,338 +78,485 @@ body{background:var(--bg);color:var(--white);font-family:'Syne',sans-serif;min-h
 .sig-purple{background:rgba(188,140,255,0.15);color:var(--purple)}
 .sig-muted{background:rgba(107,107,133,0.15);color:var(--muted)}
 .sig-blue{background:rgba(74,158,255,0.15);color:var(--blue)}
+.sig-orange{background:rgba(247,147,26,0.15);color:var(--orange)}
 
 /* Section */
-.section{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:12px}
-.sec-title{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px}
-.sec-title::after{content:'';flex:1;height:1px;background:var(--border)}
-.mrow{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(36,36,50,0.5)}
-.mrow:last-child{border-bottom:none;padding-bottom:0}
-.mrow:first-child{padding-top:0}
-.mk{font-size:13px;color:var(--muted)}
-.mv{font-size:13px;font-weight:700;font-family:'Space Mono',monospace;text-align:right}
+.sec{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px}
+.sec-t{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.sec-t::after{content:'';flex:1;height:1px;background:var(--border)}
+.row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(36,36,50,0.5)}
+.row:last-child{border-bottom:none;padding-bottom:0}
+.row:first-child{padding-top:0}
+.rk{font-size:12px;color:var(--muted)}
+.rv{font-size:12px;font-weight:700;font-family:'Space Mono',monospace;text-align:right}
+
+/* MA bars */
+.ma-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(36,36,50,0.5)}
+.ma-row:last-child{border-bottom:none}
+.ma-left{font-size:12px;color:var(--muted)}
+.ma-right{text-align:right}
+.ma-val{font-size:12px;font-weight:700;font-family:'Space Mono',monospace}
+.ma-diff{font-size:10px;font-family:'Space Mono',monospace;margin-top:1px}
 
 /* Fees */
-.fee-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:4px}
-.fee-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px 8px;text-align:center}
-.fb-label{font-size:10px;color:var(--muted);margin-bottom:5px;font-family:'Space Mono',monospace}
-.fb-val{font-size:22px;font-weight:800}
-.fb-unit{font-size:10px;color:var(--muted);margin-top:2px}
+.fee-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:4px}
+.fb{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px 6px;text-align:center}
+.fb-l{font-size:9px;color:var(--muted);margin-bottom:4px;font-family:'Space Mono',monospace}
+.fb-v{font-size:18px;font-weight:800}
+.fb-u{font-size:9px;color:var(--muted);margin-top:1px}
+
+/* Multi price */
+.mp-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px}
+.mp-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px;text-align:center}
+.mp-l{font-size:9px;color:var(--muted);font-family:'Space Mono',monospace;margin-bottom:4px}
+.mp-v{font-size:14px;font-weight:800}
+
+/* Stable pie */
+.stable-bar{display:flex;height:8px;border-radius:4px;overflow:hidden;margin:10px 0 4px;gap:2px}
+.stable-seg{border-radius:4px;transition:width 0.8s}
+
+/* Diff bar */
+.diff-wrap{margin:10px 0 4px}
+.diff-labels{display:flex;justify-content:space-between;font-size:9px;color:var(--muted);font-family:'Space Mono',monospace;margin-bottom:4px}
+
+/* Alerts */
+.alert-item{background:rgba(255,71,87,0.08);border:1px solid rgba(255,71,87,0.2);border-radius:10px;padding:12px;margin-bottom:8px}
+.alert-sev{font-size:10px;font-weight:700;color:var(--red);margin-bottom:3px;font-family:'Space Mono',monospace}
+.opp-item{background:rgba(188,140,255,0.08);border:1px solid rgba(188,140,255,0.2);border-radius:10px;padding:12px;margin-bottom:8px}
+.opp-sev{font-size:10px;font-weight:700;color:var(--purple);margin-bottom:3px;font-family:'Space Mono',monospace}
+.info-item{background:rgba(74,158,255,0.08);border:1px solid rgba(74,158,255,0.2);border-radius:10px;padding:12px;margin-bottom:8px}
+.info-sev{font-size:10px;font-weight:700;color:var(--blue);margin-bottom:3px;font-family:'Space Mono',monospace}
 
 /* Loading */
 .loading{text-align:center;padding:50px 20px;color:var(--muted);font-family:'Space Mono',monospace;font-size:12px}
 .spinner{width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--orange);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 14px}
 @keyframes spin{to{transform:rotate(360deg)}}
-.updated{text-align:center;font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);padding:8px;letter-spacing:1px}
-
-/* ATH bar */
-.ath-bar-wrap{margin-top:12px}
-.ath-bar-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);font-family:'Space Mono',monospace;margin-bottom:5px}
-.ath-bar-bg{height:6px;background:var(--border);border-radius:3px;overflow:hidden}
-.ath-bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--purple),var(--orange));transition:width 0.8s ease}
+.updated{text-align:center;font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);padding:8px;letter-spacing:1px}
 </style>
 </head>
 <body>
-
 <div class="header">
   <div class="logo">
     <div class="logo-icon">₿</div>
-    <div>
-      <div class="logo-text">BTC Analytics</div>
-      <div class="logo-sub">ON-CHAIN</div>
-    </div>
+    <div><div class="logo-text">BTC Analytics</div><div class="logo-sub">ON-CHAIN · LIVE</div></div>
   </div>
-  <button class="refresh-btn" id="refreshBtn" onclick="loadData()">↻ Refresh</button>
+  <div class="hright">
+    <div class="live-dot"></div>
+    <button class="refresh-btn" id="btn" onclick="load()">↻</button>
+  </div>
 </div>
-
 <div class="nav">
-  <button class="nav-btn active" onclick="showTab('dashboard',this)">Dashboard</button>
-  <button class="nav-btn" onclick="showTab('marche',this)">Marché</button>
-  <button class="nav-btn" onclick="showTab('mempool',this)">Mempool</button>
-  <button class="nav-btn" onclick="showTab('alertes',this)">Alertes</button>
+  <button class="nav-btn active" onclick="tab('dash',this)">Dashboard</button>
+  <button class="nav-btn" onclick="tab('onchain',this)">On-Chain</button>
+  <button class="nav-btn" onclick="tab('tech',this)">Technique</button>
+  <button class="nav-btn" onclick="tab('marche',this)">Marché</button>
+  <button class="nav-btn" onclick="tab('reseau',this)">Réseau</button>
+  <button class="nav-btn" onclick="tab('ln',this)">Lightning</button>
+  <button class="nav-btn" onclick="tab('alertes',this)">Alertes</button>
 </div>
-
 <div class="content">
+  <div id="tab-dash" class="screen active"><div class="loading"><div class="spinner"></div>Chargement...</div></div>
+  <div id="tab-onchain" class="screen"><div class="loading"><div class="spinner"></div>Chargement...</div></div>
+  <div id="tab-tech" class="screen"><div class="loading"><div class="spinner"></div>Chargement...</div></div>
+  <div id="tab-marche" class="screen"><div class="loading"><div class="spinner"></div>Chargement...</div></div>
+  <div id="tab-reseau" class="screen"><div class="loading"><div class="spinner"></div>Chargement...</div></div>
+  <div id="tab-ln" class="screen"><div class="loading"><div class="spinner"></div>Chargement...</div></div>
+  <div id="tab-alertes" class="screen"><div class="loading"><div class="spinner"></div>Chargement...</div></div>
+</div>
+<script>
+const API='https://btc-onchain-analytics.vercel.app';
+let D=null;
 
-  <div id="tab-dashboard" class="screen active">
-    <div id="dash-content"><div class="loading"><div class="spinner"></div>Chargement...</div></div>
+function tab(n,b){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));
+  document.getElementById('tab-'+n).classList.add('active');
+  if(b)b.classList.add('active');
+}
+
+const p=(n,d=2)=>n==null?'—':Number(n).toLocaleString('fr-FR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const $=(n)=>n==null?'—':'$'+Number(n).toLocaleString('fr-FR',{minimumFractionDigits:0,maximumFractionDigits:0});
+const B=(n)=>{if(n==null)return'—';if(n>=1e12)return'$'+(n/1e12).toFixed(2)+'T';if(n>=1e9)return'$'+(n/1e9).toFixed(1)+'B';if(n>=1e6)return'$'+(n/1e6).toFixed(1)+'M';return'$'+n.toFixed(0)};
+const N=(n)=>n==null?'—':Number(n).toLocaleString('fr-FR');
+const T=(iso)=>iso?new Date(iso).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'—';
+const pct=(v,sfx='%')=>v==null?'—':(v>=0?'+':'')+v.toFixed(2)+sfx;
+const col=(v)=>v==null?'':v>=0?'var(--green)':'var(--red)';
+const chg=(v,l='')=>v==null?'—':`<span style="color:${col(v)}">${v>=0?'▲':'▼'}${Math.abs(v).toFixed(2)}%${l?' <span style="opacity:0.6;font-size:10px">'+l+'</span>':''}</span>`;
+
+function sc(s){
+  if(!s||s==='—')return'sig-muted';
+  if(s.includes('🔴'))return'sig-red';
+  if(s.includes('🟡')||s.includes('⚠️'))return'sig-yellow';
+  if(s.includes('🟢')||s.includes('✅'))return'sig-green';
+  if(s.includes('💜'))return'sig-purple';
+  return'sig-muted';
+}
+function fgC(v){
+  if(v<=20)return'#bc8cff';
+  if(v<=40)return'#ffd600';
+  if(v<=60)return'#4a9eff';
+  if(v<=80)return'#f7931a';
+  return'#ff4757';
+}
+
+function renderDash(d){
+  const c1=d.price_change_1d,c7=d.price_change_7d,c30=d.price_change_30d;
+  const ap=d.ath_pct,bw=ap?Math.min(98,Math.max(2,100-Math.abs(ap))):0;
+  const fg=d.fear_greed_value,fc=fg!=null?fgC(fg):'var(--muted)';
+  const fgH=d.fear_greed_history_7d||[];
+  return`
+<div class="hero">
+  <div class="price-label">Bitcoin · BTC / USD</div>
+  <div class="price-main">${$(d.price_usd)}</div>
+  <div class="changes">
+    <span class="chip ${(c1||0)>=0?'up':'down'}">${(c1||0)>=0?'▲':'▼'}${Math.abs(c1||0).toFixed(2)}% <span style="opacity:0.6">24h</span></span>
+    ${c7!=null?`<span class="chip ${c7>=0?'up':'down'}">${c7>=0?'▲':'▼'}${Math.abs(c7).toFixed(2)}% <span style="opacity:0.6">7j</span></span>`:''}
+    ${c30!=null?`<span class="chip ${c30>=0?'up':'down'}">${c30>=0?'▲':'▼'}${Math.abs(c30).toFixed(2)}% <span style="opacity:0.6">30j</span></span>`:''}
   </div>
-
-  <div id="tab-marche" class="screen">
-    <div id="marche-content"><div class="loading"><div class="spinner"></div>Chargement...</div></div>
+  <div class="pgrid">
+    <div class="pi"><div class="pi-l">Market Cap</div><div class="pi-v">${B(d.market_cap)}</div></div>
+    <div class="pi"><div class="pi-l">Dominance</div><div class="pi-v">${d.btc_dominance?d.btc_dominance.toFixed(1)+'%':'—'}</div></div>
+    <div class="pi"><div class="pi-l">ATH</div><div class="pi-v">${$(d.ath_usd)}</div></div>
   </div>
-
-  <div id="tab-mempool" class="screen">
-    <div id="mempool-content"><div class="loading"><div class="spinner"></div>Chargement...</div></div>
-  </div>
-
-  <div id="tab-alertes" class="screen">
-    <div id="alertes-content"><div class="loading"><div class="spinner"></div>Chargement...</div></div>
-  </div>
-
+  ${ap!=null?`<div class="bar-wrap"><div class="bar-labels"><span>Bas</span><span style="color:var(--orange)">${d.ath_signal||''} · ${Math.abs(ap).toFixed(1)}% sous ATH</span><span>ATH</span></div><div class="bar-bg"><div class="bar-fill" style="width:${bw}%;background:linear-gradient(90deg,var(--purple),var(--blue),var(--orange))"></div></div></div>`:''}
 </div>
 
-<script>
-const API = 'https://btc-onchain-analytics.vercel.app';
-let D = null;
+${fg!=null?`
+<div class="fg-card">
+  <div class="fg-gauge">
+    <svg width="72" height="72" viewBox="0 0 72 72"><circle cx="36" cy="36" r="30" fill="none" stroke="var(--border)" stroke-width="7" stroke-dasharray="188 251"/><circle cx="36" cy="36" r="30" fill="none" stroke="${fc}" stroke-width="7" stroke-dasharray="${(fg/100)*188} 251" stroke-linecap="round"/></svg>
+    <div class="fg-center"><div class="fg-num" style="color:${fc}">${Math.round(fg)}</div></div>
+  </div>
+  <div class="fg-info">
+    <div class="fg-ttl">Fear & Greed Index</div>
+    <div class="fg-lbl" style="color:${fc}">${d.fear_greed_classification||'—'}</div>
+    ${fgH.length>0?`<div class="fg-hist">${fgH.slice().reverse().map(h=>`<div class="fg-dot" style="background:${fgC(h.value)}" title="${h.value}: ${h.classification}"></div>`).join('')}</div><div style="font-size:9px;color:var(--muted);margin-top:3px;font-family:'Space Mono',monospace">7 derniers jours →</div>`:''}
+  </div>
+</div>`:''}
 
-function showTab(name, btn) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('tab-' + name).classList.add('active');
-  if (btn) btn.classList.add('active');
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <div class="kpi-l">MVRV Ratio</div>
+    <div class="kpi-v" style="color:var(--orange)">${d.mvrv?p(d.mvrv,3):'—'}</div>
+    <span class="badge ${sc(d.mvrv_signal)}">${d.mvrv_signal||'—'}</span>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-l">NUPL</div>
+    <div class="kpi-v" style="color:var(--blue)">${d.nupl!=null?p(d.nupl,3):'—'}</div>
+    <span class="badge ${sc(d.nupl_zone)}">${d.nupl_zone||'—'}</span>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-l">RSI 14j</div>
+    <div class="kpi-v" style="color:var(--yellow)">${d.rsi_14?p(d.rsi_14,1):'—'}</div>
+    <span class="badge ${sc(d.rsi_signal)}">${d.rsi_signal||'—'}</span>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-l">Sharpe 30j</div>
+    <div class="kpi-v" style="color:${(d.sharpe_30d||0)>=0?'var(--green)':'var(--red)'}">${d.sharpe_30d!=null?p(d.sharpe_30d,2):'—'}</div>
+    <span class="badge ${sc(d.sharpe_signal)}">${d.sharpe_signal||'—'}</span>
+  </div>
+</div>
+
+<div class="sec">
+  <div class="sec-t">Réseau Bitcoin</div>
+  <div class="row"><span class="rk">Hashrate</span><span class="rv">${d.hashrate_eh?d.hashrate_eh.toFixed(1)+' EH/s':'—'}</span></div>
+  <div class="row"><span class="rk">Adresses actives</span><span class="rv">${d.active_addresses?N(Math.round(d.active_addresses)):'—'}</span></div>
+  <div class="row"><span class="rk">TXs 24h</span><span class="rv">${d.tx_24h?N(d.tx_24h):'—'}</span></div>
+  <div class="row"><span class="rk">NVT Signal</span><span class="rv">${d.nvt?p(d.nvt,1):'—'}</span></div>
+  <div class="row"><span class="rk">Fees rapide</span><span class="rv"><span class="badge ${sc(d.fee_signal)}">${d.fee_high||'—'} sat/vB</span></span></div>
+</div>
+<div class="updated">Mis à jour ${T(d.updated_at)} · Auto-refresh 5min</div>`;
 }
 
-function fmt(n, d=2) {
-  if (n == null) return '—';
-  return Number(n).toLocaleString('fr-FR', {minimumFractionDigits:d, maximumFractionDigits:d});
-}
-function fmtP(n) {
-  if (n == null) return '—';
-  return '$' + Number(n).toLocaleString('fr-FR', {minimumFractionDigits:0, maximumFractionDigits:0});
-}
-function fmtB(n) {
-  if (n == null) return '—';
-  if (n >= 1e12) return '$' + (n/1e12).toFixed(2) + 'T';
-  if (n >= 1e9)  return '$' + (n/1e9).toFixed(1) + 'B';
-  if (n >= 1e6)  return '$' + (n/1e6).toFixed(1) + 'M';
-  return '$' + n.toFixed(0);
-}
-function fmtTime(iso) {
-  if (!iso) return '—';
-  return new Date(iso).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
-}
-function sigClass(sig) {
-  if (!sig || sig === '—') return 'sig-muted';
-  if (sig.includes('🔴')) return 'sig-red';
-  if (sig.includes('🟡') || sig.includes('⚠️')) return 'sig-yellow';
-  if (sig.includes('🟢') || sig.includes('✅')) return 'sig-green';
-  if (sig.includes('💜')) return 'sig-purple';
-  return 'sig-muted';
-}
-
-function renderDash(d) {
-  const chg = d.price_change_1d;
-  const chgClass = chg >= 0 ? 'up' : 'down';
-  const chgSign  = chg >= 0 ? '▲' : '▼';
-  const athPct   = d.ath_pct ? Math.abs(d.ath_pct) : null;
-  const barWidth = athPct ? Math.min(100, Math.max(2, 100 - athPct)) : 0;
-
-  return `
-    <div class="price-hero">
-      <div class="price-label">Bitcoin · BTC/USD</div>
-      <div class="price-main">${fmtP(d.price_usd)}</div>
-      <div class="price-change ${chgClass}">
-        ${chgSign} ${Math.abs(chg||0).toFixed(2)}%
-        <span style="opacity:0.6;font-size:10px">24h</span>
-      </div>
-      <div class="price-row">
-        <div class="price-item">
-          <div class="pi-label">Market Cap</div>
-          <div class="pi-val">${fmtB(d.market_cap)}</div>
-        </div>
-        <div class="price-item">
-          <div class="pi-label">Volume 24h</div>
-          <div class="pi-val">${fmtB(d.volume_usd)}</div>
-        </div>
-        <div class="price-item">
-          <div class="pi-label">7j</div>
-          <div class="pi-val" style="color:${(d.price_change_7d||0)>=0?'var(--green)':'var(--red)'}">${d.price_change_7d ? (d.price_change_7d>0?'▲':'▼')+Math.abs(d.price_change_7d).toFixed(1)+'%' : '—'}</div>
-        </div>
-      </div>
-      ${athPct != null ? `
-      <div class="ath-bar-wrap">
-        <div class="ath-bar-labels">
-          <span>Bas historique</span>
-          <span style="color:var(--orange)">${d.ath_signal || ''} (${athPct.toFixed(1)}% sous ATH)</span>
-          <span>ATH ${fmtP(d.ath_usd)}</span>
-        </div>
-        <div class="ath-bar-bg">
-          <div class="ath-bar-fill" style="width:${barWidth}%"></div>
-        </div>
-      </div>` : ''}
-    </div>
-
-    <div class="kpi-grid">
-      <div class="kpi-card">
-        <div class="kpi-label">Fees rapide</div>
-        <div class="kpi-value" style="color:var(--green)">${d.fee_high || '—'}</div>
-        <span class="badge ${sigClass(d.fee_signal)}">${d.fee_signal || 'sat/vB'}</span>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">Mempool</div>
-        <div class="kpi-value" style="color:var(--purple)">${d.pending_txs ? Math.round(d.pending_txs/1000)+'k' : '—'}</div>
-        <span class="badge ${sigClass(d.mempool_signal)}">${d.mempool_signal || 'TXs'}</span>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">Hashrate</div>
-        <div class="kpi-value" style="color:var(--blue);font-size:18px">${d.hashrate_eh ? d.hashrate_eh.toFixed(0) : '—'}</div>
-        <span class="badge sig-muted">EH/s</span>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">Supply</div>
-        <div class="kpi-value" style="color:var(--orange);font-size:18px">${d.circulating_supply ? (d.circulating_supply/1e6).toFixed(2)+'M' : '—'}</div>
-        <span class="badge sig-muted">BTC en circ.</span>
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="sec-title">Réseau Bitcoin</div>
-      <div class="mrow"><span class="mk">Hashrate</span><span class="mv">${d.hashrate_eh ? d.hashrate_eh.toFixed(1)+' EH/s' : '—'}</span></div>
-      <div class="mrow"><span class="mk">Difficulté</span><span class="mv">${d.difficulty ? (d.difficulty/1e12).toFixed(2)+'T' : '—'}</span></div>
-      <div class="mrow"><span class="mk">TXs mempool</span><span class="mv">${d.pending_txs ? Number(d.pending_txs).toLocaleString('fr-FR') : '—'}</span></div>
-      <div class="mrow"><span class="mk">Taille mempool</span><span class="mv">${d.pending_mb ? d.pending_mb.toFixed(1)+' MB' : '—'}</span></div>
-    </div>
-
-    <div class="updated">Mis à jour à ${fmtTime(d.updated_at)} · Auto-refresh 5 min</div>
-  `;
+function renderOnchain(d){
+  const fg=d.fear_greed_value;
+  const mvrv=d.lth_mvrv_proxy,sth=d.sth_mvrv_proxy;
+  return`
+<div class="sec">
+  <div class="sec-t">Métriques On-Chain</div>
+  <div class="row"><span class="rk">MVRV Ratio</span><div style="text-align:right"><div class="rv">${d.mvrv?p(d.mvrv,4):'—'}</div><span class="badge ${sc(d.mvrv_signal)} " style="margin-top:2px">${d.mvrv_signal||'—'}</span></div></div>
+  <div class="row"><span class="rk">NUPL</span><div style="text-align:right"><div class="rv">${d.nupl!=null?p(d.nupl,4):'—'}</div><span class="badge ${sc(d.nupl_zone)}">${d.nupl_zone||'—'}</span></div></div>
+  <div class="row"><span class="rk">NVT Signal</span><span class="rv">${d.nvt?p(d.nvt,2):'—'}</span></div>
+  <div class="row"><span class="rk">NVT 90j</span><span class="rv">${d.nvt_signal_90?p(d.nvt_signal_90,2):'—'}</span></div>
+  <div class="row"><span class="rk">Adresses actives</span><span class="rv">${d.active_addresses?N(Math.round(d.active_addresses)):'—'}</span></div>
+  <div class="row"><span class="rk">Volume on-chain</span><span class="rv">${d.volume_onchain_usd?B(d.volume_onchain_usd):'—'}</span></div>
+  <div class="row"><span class="rk">Supply active 30j</span><span class="rv">${d.supply_active_30d?p(d.supply_active_30d,0)+' BTC':'—'}</span></div>
+  <div class="row"><span class="rk">Supply active 180j</span><span class="rv">${d.supply_active_180d?p(d.supply_active_180d,0)+' BTC':'—'}</span></div>
+  <div class="row"><span class="rk">Supply active 1 an</span><span class="rv">${d.supply_active_1yr?p(d.supply_active_1yr,0)+' BTC':'—'}</span></div>
+  <div class="row"><span class="rk">Source CoinMetrics</span><span class="rv" style="color:var(--muted);font-size:10px">${d.coinmetrics_date||'—'}</span></div>
+</div>
+<div class="sec">
+  <div class="sec-t">LTH / STH Proxy (MA200 / MA30)</div>
+  <div class="row"><span class="rk">LTH Realized Price proxy</span><span class="rv">${$(d.lth_realized_price_proxy)}</span></div>
+  <div class="row"><span class="rk">STH Realized Price proxy</span><span class="rv">${$(d.sth_realized_price_proxy)}</span></div>
+  <div class="row"><span class="rk">LTH MVRV proxy</span><span class="rv" style="color:${mvrv!=null?(mvrv>1?'var(--green)':'var(--red)'):'var(--white)'}">${mvrv?p(mvrv,3):'—'}</span></div>
+  <div class="row"><span class="rk">STH MVRV proxy</span><span class="rv" style="color:${sth!=null?(sth>1?'var(--green)':'var(--red)'):'var(--white)'}">${sth?p(sth,3):'—'}</span></div>
+  <div style="font-size:10px;color:var(--muted);padding:8px 0;font-family:'Space Mono',monospace">⚠️ Proxy via moyennes mobiles — approximation des vraies valeurs UTXO</div>
+</div>
+${fg!=null?`
+<div class="sec">
+  <div class="sec-t">Fear & Greed — 7 jours</div>
+  ${(d.fear_greed_history_7d||[]).map((h,i)=>`<div class="row"><span class="rk">${i===0?'Aujourd\'hui':'J-'+i}</span><div style="display:flex;align-items:center;gap:8px"><div style="width:50px;height:4px;background:${fgC(h.value)};border-radius:2px"></div><span class="rv" style="color:${fgC(h.value)}">${h.value} — ${h.classification}</span></div></div>`).join('')}
+</div>`:''}
+<div class="sec">
+  <div class="sec-t">Guide MVRV</div>
+  ${[['< 1.0','Sous-évalué 💜','sig-purple'],['1.0–2.5','Zone neutre 🟢','sig-green'],['2.5–3.5','Zone chaude 🟡','sig-yellow'],['> 3.5','Surachat 🔴','sig-red']].map(([r,l,c])=>`<div class="row"><span class="rk" style="font-family:'Space Mono',monospace;font-size:11px">${r}</span><span class="badge ${c}">${l}</span></div>`).join('')}
+</div>
+<div class="sec">
+  <div class="sec-t">Guide NUPL</div>
+  ${[['< 0','Capitulation 💜','sig-purple'],['0–0.25','Espoir 🟢','sig-green'],['0.25–0.50','Optimisme 🟢','sig-green'],['0.50–0.75','Avidité 🟡','sig-yellow'],['> 0.75','Euphorie 🔴','sig-red']].map(([r,l,c])=>`<div class="row"><span class="rk" style="font-family:'Space Mono',monospace;font-size:11px">${r}</span><span class="badge ${c}">${l}</span></div>`).join('')}
+</div>`;
 }
 
-function renderMarche(d) {
-  return `
-    <div class="section">
-      <div class="sec-title">Prix & Variations</div>
-      <div class="mrow"><span class="mk">Prix actuel</span><span class="mv">${fmtP(d.price_usd)}</span></div>
-      <div class="mrow"><span class="mk">Variation 24h</span><span class="mv" style="color:${(d.price_change_1d||0)>=0?'var(--green)':'var(--red)'}">${d.price_change_1d ? (d.price_change_1d>0?'+':'')+d.price_change_1d.toFixed(2)+'%' : '—'}</span></div>
-      <div class="mrow"><span class="mk">Variation 7j</span><span class="mv" style="color:${(d.price_change_7d||0)>=0?'var(--green)':'var(--red)'}">${d.price_change_7d ? (d.price_change_7d>0?'+':'')+d.price_change_7d.toFixed(2)+'%' : '—'}</span></div>
-      <div class="mrow"><span class="mk">Haut 24h</span><span class="mv">${fmtP(d.high_24h)}</span></div>
-      <div class="mrow"><span class="mk">Bas 24h</span><span class="mv">${fmtP(d.low_24h)}</span></div>
-      <div class="mrow"><span class="mk">ATH</span><span class="mv">${fmtP(d.ath_usd)}</span></div>
-      <div class="mrow"><span class="mk">Distance ATH</span><span class="mv" style="color:var(--muted)">${d.ath_pct ? Math.abs(d.ath_pct).toFixed(1)+'% sous ATH' : '—'}</span></div>
-    </div>
-
-    <div class="section">
-      <div class="sec-title">Market</div>
-      <div class="mrow"><span class="mk">Market Cap</span><span class="mv">${fmtB(d.market_cap)}</span></div>
-      <div class="mrow"><span class="mk">Volume 24h</span><span class="mv">${fmtB(d.volume_usd)}</span></div>
-      <div class="mrow"><span class="mk">Supply circulant</span><span class="mv">${d.circulating_supply ? Number(d.circulating_supply).toLocaleString('fr-FR') : '—'}</span></div>
-      <div class="mrow"><span class="mk">% miné</span><span class="mv">${d.circulating_supply ? ((d.circulating_supply/21000000)*100).toFixed(2)+'%' : '—'}</span></div>
-    </div>
-
-    <div class="section">
-      <div class="sec-title">Signal ATH</div>
-      ${[
-        ['< 5% sous ATH','Proche sommet 🔴','sig-red'],
-        ['5–20% sous ATH','Zone haute 🟡','sig-yellow'],
-        ['20–50% sous ATH','Zone médiane 🟢','sig-green'],
-        ['> 50% sous ATH','Zone basse 💜','sig-purple'],
-      ].map(([r,l,c])=>`<div class="mrow"><span class="mk" style="font-family:'Space Mono',monospace;font-size:11px">${r}</span><span class="badge ${c}">${l}</span></div>`).join('')}
-    </div>
-  `;
+function renderTech(d){
+  const price=d.price_usd||d.kraken_close||0;
+  function maBar(label,ma,diff){
+    if(!ma) return `<div class="ma-row"><span class="ma-left">${label}</span><span class="ma-right"><div class="ma-val">—</div></div></div>`;
+    const above=price>ma;
+    return`<div class="ma-row">
+      <span class="ma-left">${label}</span>
+      <span class="ma-right">
+        <div class="ma-val">${$(ma)}</div>
+        <div class="ma-diff" style="color:${above?'var(--green)':'var(--red)'}">${above?'▲':'▼'} ${diff!=null?Math.abs(diff).toFixed(2)+'%':'—'} ${above?'au-dessus':'en-dessous'}</div>
+      </span>
+    </div>`;
+  }
+  return`
+<div class="sec">
+  <div class="sec-t">Moyennes Mobiles</div>
+  ${maBar('MA 7 jours', d.ma_7d, d.price_vs_ma7)}
+  ${maBar('MA 30 jours', d.ma_30d, d.price_vs_ma30)}
+  ${maBar('MA 200 jours', d.ma_200d, d.price_vs_ma200)}
+</div>
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <div class="kpi-l">RSI 14j</div>
+    <div class="kpi-v" style="color:var(--yellow)">${d.rsi_14?p(d.rsi_14,1):'—'}</div>
+    <span class="badge ${sc(d.rsi_signal)}">${d.rsi_signal||'—'}</span>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-l">Volatilité 30j</div>
+    <div class="kpi-v" style="color:var(--orange)">${d.volatility_30d_ann?p(d.volatility_30d_ann*100,1)+'%':'—'}</div>
+    <div class="kpi-sub">annualisée</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-l">Sharpe 30j</div>
+    <div class="kpi-v" style="color:${(d.sharpe_30d||0)>=0?'var(--green)':'var(--red)'}">${d.sharpe_30d!=null?p(d.sharpe_30d,3):'—'}</div>
+    <span class="badge ${sc(d.sharpe_signal)}">${d.sharpe_signal||'—'}</span>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-l">Sharpe 1 an</div>
+    <div class="kpi-v" style="color:${(d.sharpe_1y||0)>=0?'var(--green)':'var(--red)'}">${d.sharpe_1y!=null?p(d.sharpe_1y,3):'—'}</div>
+    <div class="kpi-sub">annualisé</div>
+  </div>
+</div>
+<div class="sec">
+  <div class="sec-t">Guide RSI</div>
+  ${[['> 80','Surachat 🔴','sig-red'],['60–80','Haussier 🟡','sig-yellow'],['40–60','Neutre 🟢','sig-green'],['20–40','Baissier 🟡','sig-yellow'],['< 20','Survente 💜','sig-purple']].map(([r,l,c])=>`<div class="row"><span class="rk" style="font-family:'Space Mono',monospace;font-size:11px">${r}</span><span class="badge ${c}">${l}</span></div>`).join('')}
+</div>
+<div class="sec">
+  <div class="sec-t">Guide Sharpe Ratio</div>
+  ${[['> 2','Excellent ✅','sig-green'],['1–2','Bon 🟢','sig-green'],['0–1','Acceptable 🟡','sig-yellow'],['< 0','Négatif 🔴','sig-red']].map(([r,l,c])=>`<div class="row"><span class="rk" style="font-family:'Space Mono',monospace;font-size:11px">${r}</span><span class="badge ${c}">${l}</span></div>`).join('')}
+</div>
+<div class="sec">
+  <div class="sec-t">LTH / STH Proxy</div>
+  <div class="row"><span class="rk">LTH Price (MA200)</span><span class="rv">${$(d.lth_realized_price_proxy)}</span></div>
+  <div class="row"><span class="rk">STH Price (MA30)</span><span class="rv">${$(d.sth_realized_price_proxy)}</span></div>
+  <div class="row"><span class="rk">LTH MVRV proxy</span><span class="rv" style="color:${(d.lth_mvrv_proxy||0)>1?'var(--green)':'var(--red)'}">${d.lth_mvrv_proxy?p(d.lth_mvrv_proxy,3):'—'}</span></div>
+  <div class="row"><span class="rk">STH MVRV proxy</span><span class="rv" style="color:${(d.sth_mvrv_proxy||0)>1?'var(--green)':'var(--red)'}">${d.sth_mvrv_proxy?p(d.sth_mvrv_proxy,3):'—'}</span></div>
+</div>
+<div class="sec">
+  <div class="sec-t">Kraken OHLC (hier)</div>
+  <div class="row"><span class="rk">Open</span><span class="rv">${$(d.kraken_open)}</span></div>
+  <div class="row"><span class="rk">High</span><span class="rv">${$(d.kraken_high)}</span></div>
+  <div class="row"><span class="rk">Low</span><span class="rv">${$(d.kraken_low)}</span></div>
+  <div class="row"><span class="rk">Close</span><span class="rv">${$(d.kraken_close)}</span></div>
+  <div class="row"><span class="rk">VWAP</span><span class="rv">${$(d.kraken_vwap)}</span></div>
+  <div class="row"><span class="rk">Volume</span><span class="rv">${d.kraken_volume?p(d.kraken_volume,2)+' BTC':'—'}</span></div>
+</div>`;
 }
 
-function renderMempool(d) {
-  return `
-    <div class="section">
-      <div class="sec-title">Frais recommandés</div>
-      <div class="fee-grid">
-        <div class="fee-box">
-          <div class="fb-label">Rapide</div>
-          <div class="fb-val" style="color:var(--green)">${d.fee_high||'—'}</div>
-          <div class="fb-unit">sat/vB · ~10min</div>
-        </div>
-        <div class="fee-box">
-          <div class="fb-label">Moyen</div>
-          <div class="fb-val" style="color:var(--orange)">${d.fee_med||'—'}</div>
-          <div class="fb-unit">sat/vB · ~30min</div>
-        </div>
-        <div class="fee-box">
-          <div class="fb-label">Lent</div>
-          <div class="fb-val" style="color:var(--muted)">${d.fee_low||'—'}</div>
-          <div class="fb-unit">sat/vB · ~1h</div>
-        </div>
-      </div>
+function renderMarche(d){
+  const usdt=d.usdt_market_cap||0,usdc=d.usdc_market_cap||0,dai=d.dai_market_cap||0;
+  const tot=usdt+usdc+dai;
+  const uw=tot>0?Math.round(usdt/tot*100):0,cw=tot>0?Math.round(usdc/tot*100):0,dw=tot>0?Math.round(dai/tot*100):0;
+  return`
+<div class="mp-grid">
+  <div class="mp-card"><div class="mp-l">CoinGecko</div><div class="mp-v">${$(d.price_usd)}</div></div>
+  <div class="mp-card"><div class="mp-l">Coinbase</div><div class="mp-v">${$(d.price_coinbase)}</div></div>
+  <div class="mp-card"><div class="mp-l">Kraken</div><div class="mp-v">${$(d.kraken_close)}</div></div>
+</div>
+<div class="sec">
+  <div class="sec-t">Prix & Variations</div>
+  <div class="row"><span class="rk">Prix USD</span><span class="rv">${$(d.price_usd)}</span></div>
+  <div class="row"><span class="rk">Haut 24h</span><span class="rv">${$(d.high_24h)}</span></div>
+  <div class="row"><span class="rk">Bas 24h</span><span class="rv">${$(d.low_24h)}</span></div>
+  <div class="row"><span class="rk">Variation 24h</span><span class="rv">${chg(d.price_change_1d)}</span></div>
+  <div class="row"><span class="rk">Variation 7j</span><span class="rv">${chg(d.price_change_7d)}</span></div>
+  <div class="row"><span class="rk">Variation 30j</span><span class="rv">${chg(d.price_change_30d)}</span></div>
+  <div class="row"><span class="rk">ATH</span><span class="rv">${$(d.ath_usd)}</span></div>
+  <div class="row"><span class="rk">Distance ATH</span><span class="rv" style="color:var(--muted)">${d.ath_pct?Math.abs(d.ath_pct).toFixed(2)+'%':'—'}</span></div>
+</div>
+<div class="sec">
+  <div class="sec-t">Market Global</div>
+  <div class="row"><span class="rk">Market Cap BTC</span><span class="rv">${B(d.market_cap)}</span></div>
+  <div class="row"><span class="rk">Market Cap Total</span><span class="rv">${B(d.total_market_cap_usd)}</span></div>
+  <div class="row"><span class="rk">Volume total 24h</span><span class="rv">${B(d.total_volume_24h_usd)}</span></div>
+  <div class="row"><span class="rk">BTC Dominance</span><span class="rv">${d.btc_dominance?d.btc_dominance.toFixed(2)+'%':'—'}</span></div>
+  <div class="row"><span class="rk">ETH Dominance</span><span class="rv">${d.eth_dominance?d.eth_dominance.toFixed(2)+'%':'—'}</span></div>
+  <div class="row"><span class="rk">Cryptos actives</span><span class="rv">${d.active_cryptos?N(d.active_cryptos):'—'}</span></div>
+</div>
+<div class="sec">
+  <div class="sec-t">Stablecoins & Liquidité</div>
+  <div class="row"><span class="rk">USDT</span><span class="rv">${B(d.usdt_market_cap)}</span></div>
+  <div class="row"><span class="rk">USDC</span><span class="rv">${B(d.usdc_market_cap)}</span></div>
+  <div class="row"><span class="rk">DAI</span><span class="rv">${B(d.dai_market_cap)}</span></div>
+  <div class="row"><span class="rk">Total stables</span><span class="rv">${B(d.stablecoin_total)}</span></div>
+  <div class="row"><span class="rk">Ratio stable/BTC mcap</span><span class="rv"><span class="badge ${sc(d.stable_signal)}">${d.stable_ratio_pct?d.stable_ratio_pct.toFixed(1)+'%':'—'}</span></span></div>
+  ${tot>0?`
+  <div style="margin-top:8px">
+    <div style="font-size:9px;color:var(--muted);font-family:'Space Mono',monospace;margin-bottom:4px">Répartition stablecoins</div>
+    <div class="stable-bar">
+      <div class="stable-seg" style="width:${uw}%;background:var(--green)"></div>
+      <div class="stable-seg" style="width:${cw}%;background:var(--blue)"></div>
+      <div class="stable-seg" style="width:${dw}%;background:var(--purple)"></div>
     </div>
-
-    <div class="section">
-      <div class="sec-title">État mempool</div>
-      <div class="mrow"><span class="mk">TXs en attente</span><span class="mv">${d.pending_txs ? Number(d.pending_txs).toLocaleString('fr-FR') : '—'}</span></div>
-      <div class="mrow"><span class="mk">Taille</span><span class="mv">${d.pending_mb ? d.pending_mb.toFixed(2)+' MB' : '—'}</span></div>
-      <div class="mrow"><span class="mk">Signal</span><span class="mv"><span class="badge ${sigClass(d.mempool_signal)}">${d.mempool_signal||'—'}</span></span></div>
-      <div class="mrow"><span class="mk">Fee minimum</span><span class="mv">${d.fee_minimum||'—'} sat/vB</span></div>
+    <div style="display:flex;gap:12px;font-size:9px;font-family:'Space Mono',monospace;color:var(--muted)">
+      <span><span style="color:var(--green)">■</span> USDT ${uw}%</span>
+      <span><span style="color:var(--blue)">■</span> USDC ${cw}%</span>
+      <span><span style="color:var(--purple)">■</span> DAI ${dw}%</span>
     </div>
-
-    <div class="section">
-      <div class="sec-title">Réseau minier</div>
-      <div class="mrow"><span class="mk">Hashrate</span><span class="mv">${d.hashrate_eh ? d.hashrate_eh.toFixed(1)+' EH/s' : '—'}</span></div>
-      <div class="mrow"><span class="mk">Difficulté</span><span class="mv">${d.difficulty ? (d.difficulty/1e12).toFixed(2)+'T' : '—'}</span></div>
-    </div>
-
-    <div class="section">
-      <div class="sec-title">Interprétation fees</div>
-      ${[['1–3 sat/vB','Réseau libre ✅','sig-green'],['4–15 sat/vB','Charge normale','sig-yellow'],['> 20 sat/vB','Congestionné 🔴','sig-red']].map(([r,l,c])=>`<div class="mrow"><span class="mk" style="font-family:'Space Mono',monospace;font-size:11px">${r}</span><span class="badge ${c}">${l}</span></div>`).join('')}
-    </div>
-  `;
+  </div>`:''}
+</div>
+<div class="sec">
+  <div class="sec-t">Supply Bitcoin</div>
+  <div class="row"><span class="rk">Supply circulant</span><span class="rv">${d.circulating_supply?N(Math.round(d.circulating_supply))+' BTC':'—'}</span></div>
+  <div class="row"><span class="rk">% miné</span><span class="rv">${d.pct_supply_issued?d.pct_supply_issued.toFixed(3)+'%':'—'}</span></div>
+  <div class="row"><span class="rk">BTC restants à miner</span><span class="rv">${d.circulating_supply?N(Math.round(21000000-d.circulating_supply))+' BTC':'—'}</span></div>
+  <div class="row"><span class="rk">Beta vs marché</span><span class="rv">${d.beta_value?p(d.beta_value,3):'—'}</span></div>
+</div>`;
 }
 
-function renderAlertes(d) {
-  const alerts = d.alerts || [];
-  const athPct = d.ath_pct ? Math.abs(d.ath_pct) : null;
-  const fee = d.fee_high;
-  const txs = d.pending_txs;
-
-  let autoAlerts = [];
-  if (athPct && athPct < 5)  autoAlerts.push({sev:'ATTENTION', msg:`BTC à seulement ${athPct.toFixed(1)}% de son ATH — zone de surachat historique`, cls:'sig-red'});
-  if (fee && fee > 50)       autoAlerts.push({sev:'RÉSEAU', msg:`Fees très élevés : ${fee} sat/vB — réseau congestionné`, cls:'sig-red'});
-  if (fee && fee > 20)       autoAlerts.push({sev:'INFO', msg:`Fees modérément élevés : ${fee} sat/vB`, cls:'sig-yellow'});
-  if (txs && txs > 100000)   autoAlerts.push({sev:'RÉSEAU', msg:`Mempool saturé : ${Number(txs).toLocaleString('fr-FR')} TXs en attente`, cls:'sig-red'});
-
-  const allAlerts = [...autoAlerts, ...alerts];
-
-  return `
-    <div class="section">
-      <div class="sec-title">Alertes actives (${allAlerts.length})</div>
-      ${allAlerts.length === 0 ? `
-        <div style="text-align:center;padding:24px;color:var(--green);font-family:'Space Mono',monospace;font-size:12px">
-          ✅ Aucune anomalie détectée<br>
-          <span style="color:var(--muted);font-size:10px;margin-top:6px;display:block">Marché dans les zones normales</span>
-        </div>
-      ` : allAlerts.map(a=>`
-        <div style="background:rgba(255,71,87,0.08);border:1px solid rgba(255,71,87,0.2);border-radius:10px;padding:12px;margin-bottom:8px">
-          <div style="font-size:10px;font-weight:700;color:var(--red);margin-bottom:4px;font-family:'Space Mono',monospace">${a.sev||'ALERTE'}</div>
-          <div style="font-size:13px">${a.msg||a.message||''}</div>
-        </div>
-      `).join('')}
-    </div>
-
-    <div class="section">
-      <div class="sec-title">Surveillance continue</div>
-      ${[
-        ['Distance ATH', d.ath_signal||'—', sigClass(d.ath_signal)],
-        ['Mempool',      d.mempool_signal||'—', sigClass(d.mempool_signal)],
-        ['Fees réseau',  d.fee_signal||'—', sigClass(d.fee_signal)],
-      ].map(([k,v,c])=>`<div class="mrow"><span class="mk">${k}</span><span class="badge ${c}">${v}</span></div>`).join('')}
-    </div>
-  `;
+function renderReseau(d){
+  const dp=d.diff_progress_pct;
+  return`
+<div class="sec">
+  <div class="sec-t">Fees Mempool</div>
+  <div class="fee-grid">
+    <div class="fb"><div class="fb-l">Rapide</div><div class="fb-v" style="color:var(--green)">${d.fee_high||'—'}</div><div class="fb-u">~10min</div></div>
+    <div class="fb"><div class="fb-l">Moyen</div><div class="fb-v" style="color:var(--orange)">${d.fee_med||'—'}</div><div class="fb-u">~30min</div></div>
+    <div class="fb"><div class="fb-l">Lent</div><div class="fb-v" style="color:var(--muted)">${d.fee_low||'—'}</div><div class="fb-u">~1h</div></div>
+    <div class="fb"><div class="fb-l">Min</div><div class="fb-v" style="color:var(--muted)">${d.fee_min||'—'}</div><div class="fb-u">sat/vB</div></div>
+  </div>
+</div>
+<div class="sec">
+  <div class="sec-t">État Mempool</div>
+  <div class="row"><span class="rk">TXs en attente</span><span class="rv">${d.pending_txs?N(d.pending_txs):'—'}</span></div>
+  <div class="row"><span class="rk">Taille</span><span class="rv">${d.pending_mb?p(d.pending_mb,2)+' MB':'—'}</span></div>
+  <div class="row"><span class="rk">Fees en attente</span><span class="rv">${d.pending_fees_btc?p(d.pending_fees_btc,4)+' BTC':'—'}</span></div>
+  <div class="row"><span class="rk">TXs/seconde</span><span class="rv">${d.mempool_tps?p(d.mempool_tps,2)+' TPS':'—'}</span></div>
+  <div class="row"><span class="rk">Signal</span><span class="rv"><span class="badge ${sc(d.mempool_signal)}">${d.mempool_signal||'—'}</span></span></div>
+</div>
+<div class="sec">
+  <div class="sec-t">Mining & Difficulté</div>
+  <div class="row"><span class="rk">Hashrate</span><span class="rv">${d.hashrate_eh?d.hashrate_eh.toFixed(2)+' EH/s':'—'}</span></div>
+  <div class="row"><span class="rk">Difficulté</span><span class="rv">${d.difficulty?(d.difficulty/1e12).toFixed(2)+'T':'—'}</span></div>
+  <div class="row"><span class="rk">Prochain ajustement</span><span class="rv" style="color:${(d.diff_change_pct||0)>=0?'var(--green)':'var(--red)'}">${d.diff_change_pct?(d.diff_change_pct>0?'+':'')+d.diff_change_pct.toFixed(2)+'%':'—'}</span></div>
+  <div class="row"><span class="rk">Retarget précédent</span><span class="rv" style="color:${(d.previous_retarget_pct||0)>=0?'var(--green)':'var(--red)'}">${d.previous_retarget_pct?(d.previous_retarget_pct>0?'+':'')+d.previous_retarget_pct.toFixed(2)+'%':'—'}</span></div>
+  <div class="row"><span class="rk">Blocs restants</span><span class="rv">${d.diff_remaining_blocks?N(d.diff_remaining_blocks):'—'}</span></div>
+  ${dp!=null?`<div class="diff-wrap"><div class="diff-labels"><span>Début époque</span><span>${dp.toFixed(1)}% écoulé</span><span>Retarget</span></div><div class="bar-bg"><div class="bar-fill" style="width:${dp}%;background:linear-gradient(90deg,var(--blue),var(--orange))"></div></div></div>`:''}
+</div>
+<div class="sec">
+  <div class="sec-t">Blockchain Stats</div>
+  <div class="row"><span class="rk">Blocs totaux</span><span class="rv">${d.blocks_total?N(d.blocks_total):'—'}</span></div>
+  <div class="row"><span class="rk">TXs totales</span><span class="rv">${d.tx_total?N(d.tx_total):'—'}</span></div>
+  <div class="row"><span class="rk">TXs 24h</span><span class="rv">${d.tx_24h?N(d.tx_24h):'—'}</span></div>
+  <div class="row"><span class="rk">Volume 24h</span><span class="rv">${d.volume_24h_usd?B(d.volume_24h_usd):'—'}</span></div>
+  <div class="row"><span class="rk">UTXOs</span><span class="rv">${d.utxo_count?N(d.utxo_count):'—'}</span></div>
+  <div class="row"><span class="rk">Taille blockchain</span><span class="rv">${d.blockchain_size_gb?p(d.blockchain_size_gb,1)+' GB':'—'}</span></div>
+</div>`;
 }
 
-async function loadData() {
-  const btn = document.getElementById('refreshBtn');
-  btn.classList.add('spin');
-  btn.textContent = '⟳';
+function renderLN(d){
+  return`
+<div class="sec">
+  <div class="sec-t">Lightning Network</div>
+  <div class="row"><span class="rk">Canaux ouverts</span><span class="rv">${d.ln_channels?N(d.ln_channels):'—'}</span></div>
+  <div class="row"><span class="rk">Nœuds actifs</span><span class="rv">${d.ln_nodes?N(d.ln_nodes):'—'}</span></div>
+  <div class="row"><span class="rk">Capacité totale</span><span class="rv">${d.ln_capacity_btc?p(d.ln_capacity_btc,2)+' BTC':'—'}</span></div>
+  <div class="row"><span class="rk">Capacité en USD</span><span class="rv">${(d.ln_capacity_btc&&d.price_usd)?B(d.ln_capacity_btc*d.price_usd):'—'}</span></div>
+  <div class="row"><span class="rk">Capacité moyenne</span><span class="rv">${d.ln_avg_capacity_sat?N(Math.round(d.ln_avg_capacity_sat))+' sat':'—'}</span></div>
+  <div class="row"><span class="rk">Capacité moy. (BTC)</span><span class="rv">${d.ln_avg_capacity_sat?p(d.ln_avg_capacity_sat/1e8,5)+' BTC':'—'}</span></div>
+</div>
+<div class="sec">
+  <div class="sec-t">À propos</div>
+  <div style="font-size:12px;color:var(--muted);line-height:1.7;padding:4px 0">
+    Le Lightning Network est la couche 2 de Bitcoin permettant des paiements instantanés et quasi-gratuits. Plus de canaux et de capacité = plus de liquidité et d'adoption.
+  </div>
+</div>`;
+}
 
-  try {
-    const res = await fetch(API + '/api/summary?t=' + Date.now());
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    D = await res.json();
+function renderAlertes(d){
+  const alerts=d.alerts||[];
+  const sevOrder={'CRITIQUE':0,'ATTENTION':1,'INFO':2,'OPPORTUNITÉ':3};
+  const sorted=[...alerts].sort((a,b)=>(sevOrder[a.severity]||9)-(sevOrder[b.severity]||9));
+  function itemClass(sev){
+    if(sev==='CRITIQUE'||sev==='ATTENTION')return'alert-item';
+    if(sev==='OPPORTUNITÉ')return'opp-item';
+    return'info-item';
+  }
+  function sevClass(sev){
+    if(sev==='CRITIQUE'||sev==='ATTENTION')return'alert-sev';
+    if(sev==='OPPORTUNITÉ')return'opp-sev';
+    return'info-sev';
+  }
+  return`
+<div class="sec">
+  <div class="sec-t">Alertes (${sorted.length})</div>
+  ${sorted.length===0?`<div style="text-align:center;padding:24px;color:var(--green);font-family:'Space Mono',monospace;font-size:12px">✅ Aucune alerte<br><span style="color:var(--muted);font-size:10px;display:block;margin-top:6px">Toutes les métriques dans les zones normales</span></div>`:sorted.map(a=>`<div class="${itemClass(a.severity)}" style="margin-bottom:8px"><div class="${sevClass(a.severity)}">${a.severity} · ${a.metric}</div><div style="font-size:12px">${a.message}</div></div>`).join('')}
+</div>
+<div class="sec">
+  <div class="sec-t">Surveillance</div>
+  ${[
+    ['Distance ATH', d.ath_signal||'—', sc(d.ath_signal)],
+    ['MVRV', d.mvrv_signal||'—', sc(d.mvrv_signal)],
+    ['NUPL', d.nupl_zone||'—', sc(d.nupl_zone)],
+    ['Fear & Greed', (d.fear_greed_value!=null?`${Math.round(d.fear_greed_value)} — `:'')+(d.fear_greed_classification||'—'), sc(d.fg_signal)],
+    ['RSI 14j', d.rsi_signal||'—', sc(d.rsi_signal)],
+    ['Sharpe 30j', d.sharpe_signal||'—', sc(d.sharpe_signal)],
+    ['Mempool', d.mempool_signal||'—', sc(d.mempool_signal)],
+    ['Fees réseau', d.fee_signal||'—', sc(d.fee_signal)],
+    ['Liquidité stables', d.stable_signal||'—', sc(d.stable_signal)],
+  ].map(([k,v,c])=>`<div class="row"><span class="rk">${k}</span><span class="badge ${c}">${v}</span></div>`).join('')}
+</div>
+<div class="updated">Mis à jour ${T(d.updated_at)}</div>`;
+}
 
-    document.getElementById('dash-content').innerHTML    = renderDash(D);
-    document.getElementById('marche-content').innerHTML  = renderMarche(D);
-    document.getElementById('mempool-content').innerHTML = renderMempool(D);
-    document.getElementById('alertes-content').innerHTML = renderAlertes(D);
-
-    btn.textContent = '✓';
-    setTimeout(()=>{ btn.textContent='↻ Refresh'; btn.classList.remove('spin'); }, 1500);
-  } catch(err) {
-    const e = `<div style="text-align:center;padding:40px;color:var(--red);font-family:'Space Mono',monospace;font-size:12px">❌ ${err.message}<br><br><button onclick="loadData()" style="margin-top:10px;padding:10px 20px;background:var(--orange);border:none;border-radius:8px;color:#000;font-weight:700;cursor:pointer">Réessayer</button></div>`;
-    ['dash','marche','mempool','alertes'].forEach(t => document.getElementById(t+'-content').innerHTML = e);
-    btn.textContent = '↻ Refresh';
-    btn.classList.remove('spin');
+async function load(){
+  const b=document.getElementById('btn');
+  b.classList.add('spin');b.textContent='⟳';
+  try{
+    const [s,m]=await Promise.all([
+      fetch(API+'/api/summary?t='+Date.now()).then(r=>r.json()),
+      fetch(API+'/api/market?t='+Date.now()).then(r=>r.json()).catch(()=>({}))
+    ]);
+    D={...s,...m};
+    document.getElementById('tab-dash').innerHTML=renderDash(D);
+    document.getElementById('tab-onchain').innerHTML=renderOnchain(D);
+    document.getElementById('tab-tech').innerHTML=renderTech(D);
+    document.getElementById('tab-marche').innerHTML=renderMarche(D);
+    document.getElementById('tab-reseau').innerHTML=renderReseau(D);
+    document.getElementById('tab-ln').innerHTML=renderLN(D);
+    document.getElementById('tab-alertes').innerHTML=renderAlertes(D);
+    b.textContent='✓';setTimeout(()=>{b.textContent='↻';b.classList.remove('spin')},1500);
+  }catch(e){
+    const err=`<div style="text-align:center;padding:40px;color:var(--red);font-family:'Space Mono',monospace;font-size:12px">❌ ${e.message}<br><br><button onclick="load()" style="margin-top:10px;padding:10px 20px;background:var(--orange);border:none;border-radius:8px;color:#000;font-weight:700;cursor:pointer">Réessayer</button></div>`;
+    ['dash','onchain','tech','marche','reseau','ln','alertes'].forEach(t=>document.getElementById('tab-'+t).innerHTML=err);
+    b.textContent='↻';b.classList.remove('spin');
   }
 }
-
-loadData();
-setInterval(loadData, 5 * 60 * 1000);
+load();
+setInterval(load,5*60*1000);
 </script>
 </body>
 </html>
