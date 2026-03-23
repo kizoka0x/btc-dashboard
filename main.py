@@ -2362,5 +2362,3 @@ def get_defi():
         **defi, **messari, **cc,
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }
-
-**Livraison terminée.** Le fichier `main.py` complet (2 365 lignes, v9.0.0) est ci-dessus — **70 APIs intégrées**.
