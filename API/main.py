@@ -1965,7 +1965,7 @@ async def serve_index():
 # ENDPOINTS API
 # ══════════════════════════════════════════════════════════════
 
-@app.get("/api/health")
+@app.get("/health")
 def health():
     now = time.time()
     def age(ts): return round(now - ts, 0) if ts and ts > 0 else None
@@ -1994,7 +1994,7 @@ def health():
     }
 
 
-@app.get("/api/exchanges")
+@app.get("/exchanges")
 def get_exchanges():
     """19 exchanges USD + DEX WBTC + spread arbitrage"""
     global _ex_cache
@@ -2060,19 +2060,19 @@ def get_exchanges():
     return result
 
 
-@app.get("/api/international")
+@app.get("/international")
 def get_international():
     """11 exchanges internationaux (JP, KR, AU, TR, BR, RU) avec conversion USD"""
     return {**fetch_international(), "updated_at": datetime.now(timezone.utc).isoformat()}
 
 
-@app.get("/api/fx")
+@app.get("/fx")
 def get_fx():
     """Taux de change BTC dans les principales devises mondiales"""
     return {**fetch_fx(), "updated_at": datetime.now(timezone.utc).isoformat()}
 
 
-@app.get("/api/onchain")
+@app.get("/onchain")
 def get_onchain():
     cg = sf(fetch_coingecko); cm = sf(fetch_coinmetrics); bgr = sf(fetch_bgeometrics)
     fg = sf(fetch_fear_greed); cm_ext = sf(fetch_coinmetrics_extended); puell = sf(fetch_puell_multiple)
@@ -2088,7 +2088,7 @@ def get_onchain():
     return {**all_data, **compute_signals(all_data), "updated_at": datetime.now(timezone.utc).isoformat()}
 
 
-@app.get("/api/network")
+@app.get("/network")
 def get_network():
     return {**sf(fetch_blockchair), **sf(fetch_mempool), **sf(fetch_blockchain_info),
             **sf(fetch_blockchain_query), **sf(fetch_blockstream), **sf(fetch_bitnodes),
@@ -2097,7 +2097,7 @@ def get_network():
             "updated_at": datetime.now(timezone.utc).isoformat()}
 
 
-@app.get("/api/lightning")
+@app.get("/lightning")
 def get_lightning():
     mem = sf(fetch_mempool); ml = sf(fetch_1ml)
     cg = sf(fetch_coingecko)
@@ -2108,7 +2108,7 @@ def get_lightning():
             "updated_at": datetime.now(timezone.utc).isoformat()}
 
 
-@app.get("/api/market")
+@app.get("/market")
 def get_market():
     cg = sf(fetch_coingecko); cg_gl = sf(fetch_coingecko_global); stable = sf(fetch_stablecoins)
     cp = sf(fetch_coinpaprika); cb = sf(fetch_coinbase); kr_meta, ohlc = fetch_kraken_ohlc()
@@ -2119,7 +2119,7 @@ def get_market():
     return {**all_data, **compute_signals(all_data), "updated_at": datetime.now(timezone.utc).isoformat()}
 
 
-@app.get("/api/etf")
+@app.get("/etf")
 def get_etf():
     soso = sf(fetch_sosovalue_etf); twelve = sf(fetch_twelvedata_etf)
     merged = {**soso, **twelve}
@@ -2131,19 +2131,19 @@ def get_etf():
     return {**merged, "updated_at": datetime.now(timezone.utc).isoformat()}
 
 
-@app.get("/api/stooq")
+@app.get("/stooq")
 def get_stooq():
     return {**sf(fetch_stooq_history), "updated_at": datetime.now(timezone.utc).isoformat()}
 
 
-@app.get("/api/alerts")
+@app.get("/alerts")
 def get_alerts():
     cg = sf(fetch_coingecko); cm = sf(fetch_coinmetrics); bgr = sf(fetch_bgeometrics)
     fg = sf(fetch_fear_greed); kr_meta, ohlc = fetch_kraken_ohlc(); tech = compute_technicals(ohlc)
     return compute_signals({**cg, **cm, **bgr, **fg, **tech, **kr_meta}).get("alerts", [])
 
 
-@app.get("/api/sources")
+@app.get("/sources")
 def get_sources():
     """Catalogue complet des 70 APIs gratuites intégrées"""
     return {
@@ -2282,7 +2282,7 @@ def get_sources():
     }
 
 
-@app.get("/api/summary")
+@app.get("/summary")
 def get_summary():
     cg = sf(fetch_coingecko); cg_gl = sf(fetch_coingecko_global); stable = sf(fetch_stablecoins)
     cm = sf(fetch_coinmetrics); bgr = sf(fetch_bgeometrics); bgr_h = sf(fetch_bgr_holders)
@@ -2317,7 +2317,7 @@ def get_summary():
     return {**all_data, **compute_signals(all_data), "updated_at": datetime.now(timezone.utc).isoformat()}
 
 
-@app.get("/api/derivatives")
+@app.get("/derivatives")
 def get_derivatives():
     """Endpoint agrégé — Futures/Dérivés BTC (6 sources)"""
     bnf = sf(fetch_binance_futures)
@@ -2357,7 +2357,7 @@ def get_derivatives():
     }
 
 
-@app.get("/api/defi")
+@app.get("/defi")
 def get_defi():
     """Endpoint — DeFi Bitcoin Ecosystem TVL + Analytics"""
     defi = sf(fetch_defillama)
