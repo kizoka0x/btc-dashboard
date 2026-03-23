@@ -1,1 +1,1358 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BTC Analytics — 70 APIs</title>
+<style>
+:root {
+  --bg: #0b0e14;
+  --bg2: #12161f;
+  --bg3: #1a1f2e;
+  --card: #1e2438;
+  --border: #2a3050;
+  --orange: #f7931a;
+  --orange2: #e8820a;
+  --green: #00c896;
+  --red: #ff4757;
+  --blue: #4da6ff;
+  --purple: #a78bfa;
+  --yellow: #fbbf24;
+  --text: #e8ecf4;
+  --text2: #8892aa;
+  --text3: #525c78;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'SF Mono', 'Fira Code', monospace; font-size: 13px; min-height: 100vh; }
+a { color: var(--orange); text-decoration: none; }
 
+/* ── HEADER ─────────────────────────────────────── */
+.header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 12px 20px; display: flex; align-items: center; gap: 16px; position: sticky; top: 0; z-index: 100; }
+.logo { font-size: 20px; font-weight: 900; color: var(--orange); letter-spacing: -1px; }
+.logo span { color: var(--text2); font-weight: 400; font-size: 11px; margin-left: 4px; }
+.price-hero { font-size: 22px; font-weight: 700; color: var(--text); }
+.price-change { font-size: 13px; padding: 2px 8px; border-radius: 4px; font-weight: 600; }
+.pos { background: rgba(0,200,150,.15); color: var(--green); }
+.neg { background: rgba(255,71,87,.15); color: var(--red); }
+.badge-apis { margin-left: auto; background: rgba(247,147,26,.1); border: 1px solid rgba(247,147,26,.3); color: var(--orange); padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+.last-update { color: var(--text3); font-size: 10px; }
+
+/* ── TABS ───────────────────────────────────────── */
+.tabs { background: var(--bg2); border-bottom: 1px solid var(--border); overflow-x: auto; white-space: nowrap; padding: 0 12px; }
+.tab { display: inline-block; padding: 10px 14px; cursor: pointer; color: var(--text2); font-size: 11px; font-weight: 600; letter-spacing: .5px; border-bottom: 2px solid transparent; transition: all .2s; text-transform: uppercase; }
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--orange); border-bottom-color: var(--orange); }
+
+/* ── LAYOUT ─────────────────────────────────────── */
+.content { padding: 16px; max-width: 1600px; margin: 0 auto; }
+.screen { display: none; }
+.screen.active { display: block; }
+.grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+.grid-6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+@media(max-width:1200px) { .grid-6 { grid-template-columns: repeat(4, 1fr); } }
+@media(max-width:900px) { .grid-4,.grid-5,.grid-6 { grid-template-columns: repeat(2, 1fr); } .grid-3 { grid-template-columns: 1fr; } }
+@media(max-width:600px) { .grid-2,.grid-3,.grid-4,.grid-5,.grid-6 { grid-template-columns: 1fr; } }
+
+/* ── CARDS ─────────────────────────────────────── */
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+.card-sm { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; }
+.section-title { color: var(--orange); font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin: 18px 0 8px; border-left: 3px solid var(--orange); padding-left: 8px; }
+.kv { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,.04); }
+.kv:last-child { border-bottom: none; }
+.kv .k { color: var(--text2); font-size: 11px; }
+.kv .v { font-weight: 600; font-size: 12px; text-align: right; }
+.kv .v.pos { color: var(--green); }
+.kv .v.neg { color: var(--red); }
+.kv .v.blue { color: var(--blue); }
+.kv .v.orange { color: var(--orange); }
+.kv .v.purple { color: var(--purple); }
+.metric-big { text-align: center; }
+.metric-big .val { font-size: 24px; font-weight: 900; }
+.metric-big .lbl { font-size: 10px; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+.metric-big .sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+/* ── FEAR & GREED ───────────────────────────────── */
+.fg-gauge { position: relative; width: 120px; height: 60px; margin: 0 auto 8px; }
+.fg-gauge svg { width: 100%; height: 100%; }
+.fg-val { text-align: center; font-size: 28px; font-weight: 900; line-height: 1; }
+.fg-label { text-align: center; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+
+/* ── TABLE ──────────────────────────────────────── */
+.tbl-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 11px; }
+thead th { background: var(--bg3); color: var(--text2); padding: 8px 10px; text-align: left; font-weight: 700; font-size: 10px; letter-spacing: .5px; text-transform: uppercase; white-space: nowrap; border-bottom: 1px solid var(--border); }
+tbody tr { border-bottom: 1px solid rgba(255,255,255,.04); transition: background .1s; }
+tbody tr:hover { background: rgba(255,255,255,.03); }
+td { padding: 7px 10px; white-space: nowrap; }
+.rank { color: var(--text3); font-size: 10px; }
+.ex-name { font-weight: 600; font-size: 12px; }
+.ex-price { font-weight: 700; font-size: 13px; color: var(--text); }
+.spread-bar { height: 4px; border-radius: 2px; background: var(--green); display: block; transition: width .5s; }
+
+/* ── LOADING ─────────────────────────────────────── */
+#loader { position: fixed; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 999; }
+.loader-ring { width: 48px; height: 48px; border: 3px solid var(--border); border-top-color: var(--orange); border-radius: 50%; animation: spin .8s linear infinite; margin-bottom: 16px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loader-text { color: var(--text2); font-size: 12px; }
+
+/* ── COUNTRY FLAGS ───────────────────────────────── */
+.region-title { font-size: 13px; font-weight: 700; color: var(--text); margin: 14px 0 8px; display: flex; align-items: center; gap: 8px; }
+
+/* ── SIGNAL ─────────────────────────────────────── */
+.signal { padding: 10px 14px; border-radius: 6px; border-left: 3px solid; margin-bottom: 8px; }
+.signal.buy { background: rgba(0,200,150,.07); border-color: var(--green); }
+.signal.sell { background: rgba(255,71,87,.07); border-color: var(--red); }
+.signal.neutral { background: rgba(77,166,255,.07); border-color: var(--blue); }
+.signal-title { font-weight: 700; font-size: 12px; }
+.signal-desc { color: var(--text2); font-size: 11px; margin-top: 3px; }
+
+/* ── SOURCE CARD ─────────────────────────────────── */
+.src-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
+.src-card { background: var(--card); border: 1px solid var(--border); border-radius: 7px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; transition: border-color .2s; }
+.src-card:hover { border-color: var(--orange); }
+.src-name { font-weight: 700; font-size: 13px; color: var(--text); display: flex; align-items: center; gap: 6px; }
+.src-url { color: var(--text3); font-size: 10px; }
+.src-data { color: var(--text2); font-size: 11px; line-height: 1.5; margin-top: 2px; }
+.src-tag { display: inline-block; font-size: 9px; font-weight: 700; letter-spacing: .5px; padding: 2px 6px; border-radius: 3px; text-transform: uppercase; }
+.tag-free { background: rgba(0,200,150,.15); color: var(--green); }
+.tag-key { background: rgba(251,191,36,.15); color: var(--yellow); }
+.tag-country { background: rgba(77,166,255,.15); color: var(--blue); }
+
+/* ── MISC ─────────────────────────────────────────── */
+.pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; }
+.pill-orange { background: rgba(247,147,26,.15); color: var(--orange); }
+.pill-green { background: rgba(0,200,150,.15); color: var(--green); }
+.pill-red { background: rgba(255,71,87,.15); color: var(--red); }
+.pill-blue { background: rgba(77,166,255,.15); color: var(--blue); }
+.pill-purple { background: rgba(167,139,250,.15); color: var(--purple); }
+.divider { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+.err { color: var(--text3); font-style: italic; font-size: 11px; }
+</style>
+</head>
+<body>
+<div id="loader">
+  <div class="loader-ring"></div>
+  <div class="loader-text">Chargement des 70 APIs...</div>
+</div>
+
+<div class="header">
+  <div class="logo">₿ BTC<span>Analytics</span></div>
+  <div class="price-hero" id="h-price">---</div>
+  <span class="price-change" id="h-change">--</span>
+  <span class="price-change" id="h-vol" style="margin-left:4px;background:rgba(77,166,255,.1);color:var(--blue)"></span>
+  <div class="badge-apis">70 APIs Gratuites</div>
+  <div class="last-update" id="h-upd"></div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="setTab('dash')">Dashboard</div>
+  <div class="tab" onclick="setTab('marche')">Marché</div>
+  <div class="tab" onclick="setTab('onchain')">On-Chain</div>
+  <div class="tab" onclick="setTab('tech')">Technique</div>
+  <div class="tab" onclick="setTab('reseau')">Réseau</div>
+  <div class="tab" onclick="setTab('ln')">Lightning</div>
+  <div class="tab" onclick="setTab('exchanges')">Exchanges USD</div>
+  <div class="tab" onclick="setTab('intl')">International</div>
+  <div class="tab" onclick="setTab('etf')">ETF</div>
+  <div class="tab" onclick="setTab('derivatifs')">Dérivés</div>
+  <div class="tab" onclick="setTab('defi')">DeFi / Analytics</div>
+  <div class="tab" onclick="setTab('alertes')">Alertes</div>
+  <div class="tab" onclick="setTab('sources')">Sources (70)</div>
+</div>
+
+<div class="content">
+
+  <!-- DASHBOARD -->
+  <div id="s-dash" class="screen active">
+    <div class="grid-4" style="margin-bottom:12px">
+      <div class="card metric-big"><div class="val orange" id="d-price">---</div><div class="lbl">Prix BTC/USD</div><div class="sub" id="d-source">CoinGecko</div></div>
+      <div class="card metric-big"><div class="val" id="d-chg24" style="color:var(--text)">--</div><div class="lbl">Variation 24h</div><div class="sub" id="d-chg7">7j: --</div></div>
+      <div class="card metric-big"><div class="val" id="d-mcap" style="color:var(--blue)">---</div><div class="lbl">Market Cap</div><div class="sub" id="d-dom">Dom: --</div></div>
+      <div class="card metric-big"><div class="val" id="d-vol" style="color:var(--purple)">---</div><div class="lbl">Volume 24h</div><div class="sub" id="d-supply">Supply: --</div></div>
+    </div>
+    <div class="grid-4" style="margin-bottom:12px">
+      <div class="card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px">
+        <div class="fg-gauge"><svg viewBox="0 0 120 60"><defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#ff4757"/><stop offset="25%" stop-color="#ffa502"/><stop offset="50%" stop-color="#ffd32a"/><stop offset="75%" stop-color="#2ed573"/><stop offset="100%" stop-color="#00c896"/></linearGradient></defs><path d="M10,55 A55,55 0 0,1 110,55" fill="none" stroke="var(--border)" stroke-width="10" stroke-linecap="round"/><path id="fg-arc" d="M10,55 A55,55 0 0,1 110,55" fill="none" stroke="url(#g1)" stroke-width="10" stroke-linecap="round" stroke-dasharray="173" stroke-dashoffset="173"/></svg></div>
+        <div class="fg-val" id="fg-val" style="color:var(--yellow)">--</div>
+        <div class="fg-label" id="fg-label" style="color:var(--text2)">Fear & Greed</div>
+        <div style="color:var(--text3);font-size:10px;margin-top:4px" id="fg-prev"></div>
+      </div>
+      <div class="card"><div class="section-title" style="margin-top:0">On-Chain KPIs</div><div id="d-onchain-kpis"></div></div>
+      <div class="card"><div class="section-title" style="margin-top:0">Réseau</div><div id="d-network-kpis"></div></div>
+      <div class="card"><div class="section-title" style="margin-top:0">Lightning</div><div id="d-ln-kpis"></div></div>
+    </div>
+    <div class="grid-2">
+      <div class="card"><div class="section-title" style="margin-top:0">Prix All-Time & Niveaux</div><div id="d-ath"></div></div>
+      <div class="card"><div class="section-title" style="margin-top:0">Marché Comparatif</div><div id="d-market-comp"></div></div>
+    </div>
+  </div>
+
+  <!-- MARCHE -->
+  <div id="s-marche" class="screen">
+    <div class="grid-3">
+      <div class="card"><div class="section-title" style="margin-top:0">CoinGecko — Prix & Marché</div><div id="m-cg"></div></div>
+      <div class="card"><div class="section-title" style="margin-top:0">Marché Global CoinGecko</div><div id="m-global"></div></div>
+      <div class="card"><div class="section-title" style="margin-top:0">CoinPaprika</div><div id="m-cp"></div></div>
+    </div>
+    <div class="grid-3" style="margin-top:12px">
+      <div class="card"><div class="section-title" style="margin-top:0">CoinLore</div><div id="m-cl"></div></div>
+      <div class="card"><div class="section-title" style="margin-top:0">CoinRanking</div><div id="m-cr"></div></div>
+      <div class="card"><div class="section-title" style="margin-top:0">Alternative.me Ticker</div><div id="m-alt"></div></div>
+    </div>
+    <div class="section-title">Stooq — Historique 30 Jours</div>
+    <div class="card"><div id="m-stooq"></div></div>
+  </div>
+
+  <!-- ON-CHAIN -->
+  <div id="s-onchain" class="screen">
+    <div class="grid-3">
+      <div class="card"><div class="section-title" style="margin-top:0">CoinMetrics — Valorisation</div><div id="oc-val"></div></div>
+      <div class="card"><div class="section-title" style="margin-top:0">CoinMetrics — Adoption</div><div id="oc-adp"></div></div>
+      <div class="card"><div class="section-title" style="margin-top:0">CoinMetrics — ROI & Mining</div><div id="oc-roi"></div></div>
+    </div>
+    <div class="grid-3" style="margin-top:12px">
+      <div class="card"><div class="section-title" style="margin-top:0">BGR bitcoin-data.com — SOPR</div><div id="oc-sopr"></div></div>
+      <div class="card"><div class="section-title" style="margin-top:0">BGR — Détenteurs & Baleines</div><div id="oc-whale"></div></div>
+      <div class="card"><div class="section-title" style="margin-top:0">BGR — NRPL & Pertes Réalisées</div><div id="oc-nrpl"></div></div>
+    </div>
+    <div class="grid-3" style="margin-top:12px">
+      <div class="card"><div class="section-title" style="margin-top:0">CoinMetrics Deep — Adresses & NVT</div><div id="oc-deep"></div></div>
+      <div class="card"><div class="section-title" style="margin-top:0">Bitfinex — Positions Long/Short</div><div id="oc-positions"></div></div>
+      <div class="card"><div class="section-title" style="margin-top:0">Deribit — Volatilité Implicite (DVol)</div><div id="oc-dvol"></div></div>
+    </div>
+  </div>
+
+  <!-- TECHNIQUE -->
+  <div id="s-tech" class="screen">
+    <div class="grid-3">
+      <div class="card"><div class="section-title" style="margin-top:0">Moyennes Mobiles — Kraken OHLC</div><div id="t-ma"></div></div>
+      <div class="card"><div class="section-title" style="margin-top:0">Indicateurs Momentum</div><div id="t-ind"></div></div>
+      <div class="card"><div class="section-title" style="margin-top:0">Risque & Volatilité</div><div id="t-risk"></div></div>
+    </div>
+    <div class="section-title">Kraken — Données OHLCV Complètes</div>
+    <div class="card"><div id="t-kraken"></div></div>
+  </div>
+
+  <!-- RESEAU -->
+  <div id="s-reseau" class="screen">
+    <div class="grid-3">
+      <div class="card"><div class="section-title" style="margin-top:0">Mempool.space — Fees & Mempool</div><div id="r-mempool"></div></div>
+      <div class="card"><div class="section-title" style="margin-top:0">Blockchair — Blockchain Stats</div><div id="r-blockchair"></div></div>
+      <div class="card"><div class="section-title" style="margin-top:0">Blockchain.info — Stats Globales</div><div id="r-bcinfo"></div></div>
+    </div>
+    <div class="grid-3" style="margin-top:12px">
+      <div class="card"><div class="section-title" style="margin-top:0">Blockstream.info</div><div id="r-blockstream"></div></div>
+      <div class="card"><div class="section-title" style="margin-top:0">Bitnodes.io — Nœuds P2P</div><div id="r-bitnodes"></div></div>
+      <div class="card"><div class="section-title" style="margin-top:0">Blockchain.info — Pools Mining</div><div id="r-pools"></div></div>
+    </div>
+    <div class="grid-3" style="margin-top:12px">
+      <div class="card"><div class="section-title" style="margin-top:0">Mempool.space — Derniers Blocs</div><div id="r-blocks"></div></div>
+      <div class="card"><div class="section-title" style="margin-top:0">Blockchain.info Charts</div><div id="r-bcharts"></div></div>
+      <div class="card"><div class="section-title" style="margin-top:0">WhatToMine — Mining Stats</div><div id="r-wtm"></div></div>
+    </div>
+  </div>
+
+  <!-- LIGHTNING -->
+  <div id="s-ln" class="screen">
+    <div class="grid-4">
+      <div class="card metric-big"><div class="val blue" id="ln-nodes">---</div><div class="lbl">Nœuds LN</div><div class="sub" id="ln-nodes-src"></div></div>
+      <div class="card metric-big"><div class="val purple" id="ln-chan">---</div><div class="lbl">Canaux</div><div class="sub" id="ln-chan-src"></div></div>
+      <div class="card metric-big"><div class="val orange" id="ln-cap-btc">---</div><div class="lbl">Capacité (BTC)</div><div class="sub" id="ln-cap-usd"></div></div>
+      <div class="card metric-big"><div class="val green" id="ln-avg-cap">---</div><div class="lbl">Capacité Moy/Canal</div><div class="sub">satoshis</div></div>
+    </div>
+    <div class="grid-2" style="margin-top:12px">
+      <div class="card"><div class="section-title" style="margin-top:0">Mempool.space Lightning</div><div id="ln-mempool"></div></div>
+      <div class="card"><div class="section-title" style="margin-top:0">1ML.com — Statistiques 30j</div><div id="ln-1ml"></div></div>
+    </div>
+  </div>
+
+  <!-- EXCHANGES USD -->
+  <div id="s-exchanges" class="screen">
+    <div class="grid-4" style="margin-bottom:12px">
+      <div class="card metric-big"><div class="val orange" id="ex-count">--</div><div class="lbl">Exchanges actifs</div></div>
+      <div class="card metric-big"><div class="val" id="ex-avg" style="color:var(--text)">---</div><div class="lbl">Prix moyen</div></div>
+      <div class="card metric-big"><div class="val" id="ex-spread" style="color:var(--yellow)">--</div><div class="lbl">Spread arbitrage</div><div class="sub">Max - Min</div></div>
+      <div class="card"><div class="kv"><span class="k">Plus haut</span><span class="v blue" id="ex-high"></span></div><div class="kv"><span class="k">Plus bas</span><span class="v blue" id="ex-low"></span></div></div>
+    </div>
+    <div class="card" style="margin-bottom:12px"><div class="tbl-wrap"><table id="ex-table"><thead><tr><th>#</th><th>Exchange</th><th>Prix USD</th><th>vs Moyen</th><th>Spread</th></tr></thead><tbody></tbody></table></div></div>
+    <div class="grid-3">
+      <div class="card"><div class="section-title" style="margin-top:0">Deribit — Dérivés</div><div id="ex-deribit"></div></div>
+      <div class="card"><div class="section-title" style="margin-top:0">Poloniex</div><div id="ex-poloniex"></div></div>
+      <div class="card"><div class="section-title" style="margin-top:0">Crypto.com</div><div id="ex-cdotcom"></div></div>
+    </div>
+    <div class="grid-3" style="margin-top:12px">
+      <div class="card"><div class="section-title" style="margin-top:0">BitMart</div><div id="ex-bitmart"></div></div>
+      <div class="card"><div class="section-title" style="margin-top:0">BTSE</div><div id="ex-btse"></div></div>
+      <div class="card"><div class="section-title" style="margin-top:0">CoinLore — Données Marché</div><div id="ex-coinlore"></div></div>
+    </div>
+    <div class="section-title">WBTC DEX — Uniswap / DexScreener</div>
+    <div class="card"><div id="ex-dex"></div></div>
+  </div>
+
+  <!-- INTERNATIONAL -->
+  <div id="s-intl" class="screen">
+    <div class="section-title">Taux de Change BTC (exchangerate-api + CoinGecko)</div>
+    <div class="grid-6" id="intl-fx"></div>
+
+    <div class="region-title">🇯🇵 JAPON</div>
+    <div class="grid-3" id="intl-jp"></div>
+
+    <div class="region-title">🇰🇷 CORÉE DU SUD</div>
+    <div class="grid-3" id="intl-kr"></div>
+
+    <div class="region-title">🇦🇺 AUSTRALIE &nbsp;·&nbsp; 🇷🇺 RUSSIE / EUROPE DE L'EST</div>
+    <div class="grid-3" id="intl-au-ru"></div>
+
+    <div class="region-title">🇹🇷 TURQUIE</div>
+    <div class="grid-2" id="intl-tr"></div>
+
+    <div class="region-title">🇧🇷 BRÉSIL</div>
+    <div class="grid-3" id="intl-br"></div>
+
+    <div class="region-title">🇿🇦 AFRIQUE DU SUD</div>
+    <div class="grid-2" id="intl-za"></div>
+
+    <div class="region-title">🇲🇽 MEXIQUE</div>
+    <div class="grid-2" id="intl-mx"></div>
+
+    <div class="region-title">🇮🇳 INDE</div>
+    <div class="grid-2" id="intl-in"></div>
+
+    <div class="region-title">🇮🇩 INDONÉSIE</div>
+    <div class="grid-2" id="intl-id"></div>
+  </div>
+
+  <!-- ETF -->
+  <div id="s-etf" class="screen">
+    <div class="grid-4" style="margin-bottom:12px">
+      <div class="card metric-big"><div class="val orange" id="etf-aum">---</div><div class="lbl">AUM Total ETF</div><div class="sub">USD (SoSoValue)</div></div>
+      <div class="card metric-big"><div class="val" id="etf-flow-day" style="color:var(--text)">---</div><div class="lbl">Flux Net Jour</div><div class="sub">Millions USD</div></div>
+      <div class="card metric-big"><div class="val blue" id="etf-flow-cum">---</div><div class="lbl">Flux Cumulé</div><div class="sub">Total depuis lancement</div></div>
+      <div class="card metric-big"><div class="val green" id="etf-btc-held">---</div><div class="lbl">BTC Détenus</div><div class="sub">Total ETFs</div></div>
+    </div>
+    <div class="grid-2">
+      <div class="card"><div class="section-title" style="margin-top:0">SoSoValue — Flux ETF BTC</div><div id="etf-soso"></div></div>
+      <div class="card"><div class="section-title" style="margin-top:0">TwelveData — Prix ETF BTC</div><div id="etf-12d"></div></div>
+    </div>
+  </div>
+
+  <!-- ALERTES -->
+  <div id="s-alertes" class="screen">
+    <div class="section-title">Signaux Actifs</div>
+    <div id="al-signals"></div>
+    <div class="section-title">Signaux Techniques</div>
+    <div id="al-tech-signals"></div>
+  </div>
+
+  <!-- DERIVATIFS -->
+  <div id="s-derivatifs" class="screen">
+    <div class="grid-4" style="margin-bottom:12px">
+      <div class="card metric-big"><div class="val orange" id="drv-funding">---</div><div class="lbl">Funding Rate Moyen</div><div class="sub">% / 8h agrégé</div></div>
+      <div class="card metric-big"><div class="val" id="drv-ls" style="color:var(--text)">---</div><div class="lbl">Ratio Long/Short</div><div class="sub">Binance Global</div></div>
+      <div class="card metric-big"><div class="val blue" id="drv-oi">---</div><div class="lbl">Open Interest BTC</div><div class="sub">Binance Futures</div></div>
+      <div class="card metric-big"><div class="val purple" id="drv-dvol">---</div><div class="lbl">Bitcoin DVol</div><div class="sub">Deribit Volatility Index</div></div>
+    </div>
+    <div class="grid-3">
+      <div class="card"><div class="section-title" style="margin-top:0">Binance USDT-M Futures (FAPI)</div><div id="drv-binance"></div></div>
+      <div class="card"><div class="section-title" style="margin-top:0">Kraken Futures — PF_XBTUSD</div><div id="drv-kraken"></div></div>
+      <div class="card"><div class="section-title" style="margin-top:0">BitMEX — XBTUSD Perpetual</div><div id="drv-bitmex"></div></div>
+    </div>
+    <div class="grid-3" style="margin-top:12px">
+      <div class="card"><div class="section-title" style="margin-top:0">Hyperliquid DEX (décentralisé)</div><div id="drv-hyper"></div></div>
+      <div class="card"><div class="section-title" style="margin-top:0">Bitget USDT-Futures</div><div id="drv-bitget"></div></div>
+      <div class="card"><div class="section-title" style="margin-top:0">Bitfinex Stats — Positions</div><div id="drv-bfxstats"></div></div>
+    </div>
+    <div class="card" style="margin-top:12px;background:rgba(247,147,26,.05);border-color:rgba(247,147,26,.2)">
+      <div style="font-size:11px;color:var(--text2);line-height:1.8">
+        <strong style="color:var(--orange)">Note sur les métriques avancées de dérivés :</strong>
+        Les données de liquidations cumulées en temps réel (Coinglass), les options Greeks complets, et les données de whale positions (Nansen, Glassnode) nécessitent des abonnements payants.
+        Les sources ci-dessus représentent <strong>tout ce qui est disponible gratuitement</strong> sans clé API.
+      </div>
+    </div>
+  </div>
+
+  <!-- DEFI / ANALYTICS -->
+  <div id="s-defi" class="screen">
+    <div class="grid-4" style="margin-bottom:12px">
+      <div class="card metric-big"><div class="val orange" id="defi-btc-tvl">---</div><div class="lbl">TVL Bitcoin Chain</div><div class="sub">DefiLlama (BTC natif)</div></div>
+      <div class="card metric-big"><div class="val green" id="defi-wbtc">---</div><div class="lbl">WBTC TVL Ethereum</div><div class="sub">DefiLlama Protocol</div></div>
+      <div class="card metric-big"><div class="val blue" id="defi-messari-price">---</div><div class="lbl">Prix (Messari)</div><div class="sub">Métriques analytiques</div></div>
+      <div class="card metric-big"><div class="val purple" id="defi-cc-close">---</div><div class="lbl">Close (CryptoCompare)</div><div class="sub">30j high: <span id="defi-cc-high">---</span></div></div>
+    </div>
+    <div class="grid-3">
+      <div class="card"><div class="section-title" style="margin-top:0">DefiLlama — Bitcoin Ecosystem TVL</div><div id="defi-llama"></div></div>
+      <div class="card"><div class="section-title" style="margin-top:0">CoinPaprika Extended — Métriques BTC</div><div id="defi-messari"></div></div>
+      <div class="card"><div class="section-title" style="margin-top:0">CryptoCompare — Historique 30j</div><div id="defi-cc"></div></div>
+    </div>
+    <div class="grid-3" style="margin-top:12px">
+      <div class="card"><div class="section-title" style="margin-top:0">WhatToMine — Mining BTC</div><div id="defi-wtm"></div></div>
+      <div class="card"><div class="section-title" style="margin-top:0">CoinMetrics Deep — Métriques On-Chain</div><div id="defi-cm-deep"></div></div>
+      <div class="card"><div class="section-title" style="margin-top:0">Mempool.space — Derniers Blocs</div><div id="defi-blocks"></div></div>
+    </div>
+    <div class="section-title">Blockchain.info Charts — Hashrate &amp; Transactions Historique</div>
+    <div class="grid-2">
+      <div class="card"><div id="defi-bchart-hashrate"></div></div>
+      <div class="card"><div id="defi-bchart-txcount"></div></div>
+    </div>
+    <div class="card" style="margin-top:12px;background:rgba(167,139,250,.05);border-color:rgba(167,139,250,.2)">
+      <div style="font-size:11px;color:var(--text2);line-height:1.8">
+        <strong style="color:var(--purple)">Métriques avancées non disponibles gratuitement :</strong>
+        LTH/STH ratios détaillés (Glassnode Pro ~$30/mois), Whale cohorts précises (Nansen ~$150/mois), 
+        Realized price par cohort (IntoTheBlock $299/mois), SOAB complet (Glassnode), 
+        Santiment sentiment (Santiment API ~$50/mois). Ces données sont exclusivement derrière des paywalls.
+      </div>
+    </div>
+  </div>
+
+  <!-- SOURCES -->
+  <div id="s-sources" class="screen">
+    <div style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <div style="font-size:28px;font-weight:900;color:var(--orange)">70 APIs Gratuites</div>
+        <div style="color:var(--text2);font-size:13px">toutes les sources Bitcoin disponibles dans le monde</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px" id="src-filters">
+        <span class="pill pill-orange" onclick="filterSrc('all')" id="f-all" style="cursor:pointer">Toutes (70)</span>
+        <span class="pill pill-blue" onclick="filterSrc('exchanges_usd')" id="f-usd" style="cursor:pointer">Exchanges USD (28)</span>
+        <span class="pill pill-blue" onclick="filterSrc('exchanges_international')" id="f-intl" style="cursor:pointer">International (19)</span>
+        <span class="pill pill-green" onclick="filterSrc('on_chain')" id="f-oc" style="cursor:pointer">On-Chain (7)</span>
+        <span class="pill pill-purple" onclick="filterSrc('lightning')" id="f-ln" style="cursor:pointer">Lightning (2)</span>
+        <span class="pill" style="background:rgba(251,191,36,.15);color:var(--yellow);cursor:pointer" onclick="filterSrc('etf_finance')">ETF (2)</span>
+        <span class="pill" style="background:rgba(255,71,87,.15);color:var(--red);cursor:pointer" onclick="filterSrc('derivatives')">Dérivés (6)</span>
+        <span class="pill" style="background:rgba(0,200,150,.15);color:var(--green);cursor:pointer" onclick="filterSrc('defi_tvl')">DeFi TVL (1)</span>
+        <span class="pill" style="background:rgba(77,166,255,.15);color:var(--blue);cursor:pointer" onclick="filterSrc('analytics')">Analytics (2)</span>
+        <span class="pill" style="background:rgba(247,147,26,.15);color:var(--orange);cursor:pointer" onclick="filterSrc('mining_stats')">Mining (2)</span>
+        <span class="pill" style="background:rgba(82,92,120,.3);color:var(--text2);cursor:pointer" onclick="filterSrc('sentiment')">Sentiment (1)</span>
+        <span class="pill" style="background:rgba(82,92,120,.3);color:var(--text2);cursor:pointer" onclick="filterSrc('historical')">Historique (2)</span>
+      </div>
+    </div>
+    <div id="src-cards" class="src-grid"></div>
+  </div>
+
+</div><!-- /content -->
+
+<script>
+const API = '';
+let DATA = {}, INTL = {}, EX = {}, STOOQ = {}, ALERTS = [], SOURCES = {}, NET = {}, LN = {};
+let DRV = {}, DEFI = {};
+let currentSrcFilter = 'all';
+
+function fmt(v, dec=0) { if(v==null||v===undefined||isNaN(v)) return '<span class="err">N/A</span>'; return Number(v).toLocaleString('fr-FR',{minimumFractionDigits:dec,maximumFractionDigits:dec}); }
+function fmtP(v) { if(v==null||isNaN(v)) return '<span class="err">N/A</span>'; const c=v>0?'pos':v<0?'neg':''; return `<span class="${c}">${v>0?'+':''}${Number(v).toFixed(2)}%</span>`; }
+function fmtV(v) { if(!v) return '<span class="err">N/A</span>'; const b=1e9,m=1e6,k=1e3; if(v>=b) return (v/b).toFixed(2)+'B'; if(v>=m) return (v/m).toFixed(2)+'M'; if(v>=k) return (v/k).toFixed(1)+'K'; return v.toFixed(0); }
+function kv(k,v,cls='') { return `<div class="kv"><span class="k">${k}</span><span class="v ${cls}">${v}</span></div>`; }
+function colorNum(v) { if(v==null||isNaN(v)) return ''; return v>0?'pos':v<0?'neg':''; }
+
+function setTab(name) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelector(`.tab[onclick*="'${name}'"]`).classList.add('active');
+  document.getElementById('s-'+name).classList.add('active');
+}
+
+// ══════ DASHBOARD ══════════════════════════════════════════
+function renderDash() {
+  const d = DATA;
+  document.getElementById('d-price').innerHTML = d.price_usd!=null?'$'+fmt(d.price_usd):'<span class="err">N/A</span>';
+  document.getElementById('d-chg24').innerHTML = fmtP(d.change_24h);
+  document.getElementById('d-chg7').textContent = '7j: '+(d.change_7d!=null?((d.change_7d>0?'+':'')+Number(d.change_7d).toFixed(2)+'%'):'N/A');
+  document.getElementById('d-mcap').innerHTML = d.market_cap_usd!=null?'$'+fmtV(d.market_cap_usd):'<span class="err">N/A</span>';
+  document.getElementById('d-dom').textContent = 'Dom: '+(d.btc_dominance!=null?d.btc_dominance.toFixed(2)+'%':'N/A');
+  document.getElementById('d-vol').innerHTML = d.volume_24h_usd!=null?'$'+fmtV(d.volume_24h_usd):'<span class="err">N/A</span>';
+  document.getElementById('d-supply').textContent = 'Supply: '+(d.circulating_supply!=null?fmt(d.circulating_supply)+' BTC':'N/A');
+
+  // Fear & Greed
+  const fg = d.fear_greed_value;
+  if(fg!=null) {
+    document.getElementById('fg-val').textContent = fg;
+    const color = fg<20?'var(--red)':fg<40?'#ff6348':fg<60?'var(--yellow)':fg<80?'#2ed573':'var(--green)';
+    document.getElementById('fg-val').style.color = color;
+    document.getElementById('fg-label').textContent = d.fear_greed_label||'';
+    document.getElementById('fg-label').style.color = color;
+    document.getElementById('fg-prev').textContent = 'Hier: '+(d.fear_greed_previous||'N/A');
+    const arc = document.getElementById('fg-arc');
+    const pct = fg/100; const total = 173;
+    arc.setAttribute('stroke-dashoffset', total*(1-pct));
+  }
+
+  // On-Chain KPIs
+  document.getElementById('d-onchain-kpis').innerHTML = [
+    kv('MVRV', d.mvrv!=null?Number(d.mvrv).toFixed(3):'N/A', d.mvrv>3?'neg':d.mvrv<1?'pos':'orange'),
+    kv('NUPL', d.nupl!=null?Number(d.nupl).toFixed(3):'N/A', d.nupl>0.75?'neg':d.nupl<0?'pos':'orange'),
+    kv('aSOPR', d.asopr!=null?Number(d.asopr).toFixed(4):'N/A'),
+    kv('RSI 14j', d.rsi_14!=null?Number(d.rsi_14).toFixed(1):'N/A', d.rsi_14>70?'neg':d.rsi_14<30?'pos':'blue'),
+    kv('Realized Cap', d.realized_cap_usd!=null?'$'+fmtV(d.realized_cap_usd):'N/A'),
+  ].join('');
+
+  document.getElementById('d-network-kpis').innerHTML = [
+    kv('Hashrate', d.hashrate_eh!=null?Number(d.hashrate_eh).toFixed(1)+' EH/s':'N/A'),
+    kv('Difficulté', d.difficulty_t!=null?Number(d.difficulty_t).toFixed(2)+' T':'N/A'),
+    kv('Blocs', d.blocks_total!=null?fmt(d.blocks_total):'N/A'),
+    kv('Mempool TXs', d.mempool_count!=null?fmt(d.mempool_count):'N/A'),
+    kv('Frais moyen', d.fee_avg_sat!=null?fmt(d.fee_avg_sat)+' sat/vB':'N/A'),
+  ].join('');
+
+  document.getElementById('d-ln-kpis').innerHTML = [
+    kv('Nœuds LN', d.ln_nodes!=null?fmt(d.ln_nodes):'N/A', 'blue'),
+    kv('Canaux', d.ln_channels!=null?fmt(d.ln_channels):'N/A', 'purple'),
+    kv('Capacité BTC', d.ln_capacity_btc!=null?fmt(d.ln_capacity_btc)+' BTC':'N/A', 'orange'),
+    kv('Capacité USD', d.ln_capacity_usd!=null?'$'+fmtV(d.ln_capacity_usd):'N/A', 'green'),
+    kv('Avg Capacité', d.ln_avg_capacity!=null?fmt(d.ln_avg_capacity)+' sat':'N/A'),
+  ].join('');
+
+  document.getElementById('d-ath').innerHTML = [
+    kv('ATH', d.ath_usd!=null?'$'+fmt(d.ath_usd):'N/A', 'orange'),
+    kv('ATH Date', d.ath_date||'N/A'),
+    kv('Distance ATH', d.ath_change_pct!=null?fmtP(d.ath_change_pct):'N/A'),
+    kv('ATL', d.atl_usd!=null?'$'+fmt(d.atl_usd):'N/A'),
+    kv('200j MA', d.ma200!=null?'$'+fmt(d.ma200):'N/A', 'blue'),
+    kv('Prix vs 200j MA', d.price_to_ma200!=null?fmtP(d.price_to_ma200):'N/A'),
+    kv('Mayer Multiple', d.mayer_multiple!=null?Number(d.mayer_multiple).toFixed(3):'N/A'),
+  ].join('');
+
+  document.getElementById('d-market-comp').innerHTML = [
+    kv('Vol 30j Annualisée', d.volatility_30d!=null?Number(d.volatility_30d).toFixed(2)+'%':'N/A'),
+    kv('Sharpe 30j', d.sharpe_30d!=null?Number(d.sharpe_30d).toFixed(3):'N/A', d.sharpe_30d>1?'pos':d.sharpe_30d<0?'neg':''),
+    kv('Puell Multiple', d.puell_multiple!=null?Number(d.puell_multiple).toFixed(3):'N/A'),
+    kv('Blocs Aujourd\'hui', d.blocks_today!=null?d.blocks_today:'N/A'),
+    kv('Revenus Mineurs/j', d.miners_revenue!=null?'$'+fmtV(d.miners_revenue):'N/A'),
+    kv('Supply Totale', d.supply_btc!=null?fmt(d.supply_btc)+' BTC':'N/A'),
+    kv('Exchanges actifs', d.exchange_count||'N/A', 'orange'),
+  ].join('');
+}
+
+// ══════ MARCHE ══════════════════════════════════════════════
+function renderMarche() {
+  const d = DATA;
+  document.getElementById('m-cg').innerHTML = [
+    kv('Prix USD', d.price_usd!=null?'<strong>$'+fmt(d.price_usd)+'</strong>':'N/A', 'orange'),
+    kv('Change 24h', fmtP(d.change_24h)),
+    kv('Change 7j', fmtP(d.change_7d)),
+    kv('Change 30j', fmtP(d.change_30d)),
+    kv('Market Cap', d.market_cap_usd!=null?'$'+fmtV(d.market_cap_usd):'N/A'),
+    kv('Volume 24h', d.volume_24h_usd!=null?'$'+fmtV(d.volume_24h_usd):'N/A'),
+    kv('Supply circulante', d.circulating_supply!=null?fmt(d.circulating_supply)+' BTC':'N/A'),
+    kv('ATH', d.ath_usd!=null?'$'+fmt(d.ath_usd):'N/A'),
+    kv('ATH Date', d.ath_date||'N/A'),
+    kv('ATL', d.atl_usd!=null?'$'+fmt(d.atl_usd):'N/A'),
+    kv('Source', 'CoinGecko API', 'blue'),
+  ].join('');
+
+  document.getElementById('m-global').innerHTML = [
+    kv('Dominance BTC', d.btc_dominance!=null?Number(d.btc_dominance).toFixed(2)+'%':'N/A', 'orange'),
+    kv('Dominance ETH', d.eth_dominance!=null?Number(d.eth_dominance).toFixed(2)+'%':'N/A'),
+    kv('Market Cap Total', d.total_market_cap!=null?'$'+fmtV(d.total_market_cap):'N/A'),
+    kv('Cryptos actives', d.active_cryptos!=null?fmt(d.active_cryptos):'N/A'),
+    kv('Cap USDT', d.usdt_market_cap!=null?'$'+fmtV(d.usdt_market_cap):'N/A'),
+    kv('Cap USDC', d.usdc_market_cap!=null?'$'+fmtV(d.usdc_market_cap):'N/A'),
+    kv('Source', 'CoinGecko /global', 'blue'),
+  ].join('');
+
+  document.getElementById('m-cp').innerHTML = [
+    kv('Prix CoinPaprika', d.price_coinpaprika!=null?'$'+fmt(d.price_coinpaprika):'N/A'),
+    kv('Volume 24h', d.coinpaprika_vol!=null?'$'+fmtV(d.coinpaprika_vol):'N/A'),
+    kv('Beta 30j', d.coinpaprika_beta!=null?Number(d.coinpaprika_beta).toFixed(3):'N/A'),
+    kv('High 24h', d.coinpaprika_high!=null?'$'+fmt(d.coinpaprika_high):'N/A'),
+    kv('Low 24h', d.coinpaprika_low!=null?'$'+fmt(d.coinpaprika_low):'N/A'),
+    kv('Open 24h', d.coinpaprika_open!=null?'$'+fmt(d.coinpaprika_open):'N/A'),
+    kv('Source', 'CoinPaprika API', 'blue'),
+  ].join('');
+
+  document.getElementById('m-cl').innerHTML = (()=>{
+    const ex = EX;
+    return [
+      kv('Prix USD', ex.coinlore_price!=null?'$'+fmt(ex.coinlore_price):'N/A'),
+      kv('Market Cap', ex.coinlore_market_cap!=null?'$'+fmtV(ex.coinlore_market_cap):'N/A'),
+      kv('Volume 24h', ex.coinlore_vol_24h!=null?'$'+fmtV(ex.coinlore_vol_24h):'N/A'),
+      kv('Change 24h', ex.coinlore_change_24h!=null?fmtP(ex.coinlore_change_24h):'N/A'),
+      kv('Change 7j', ex.coinlore_change_7d!=null?fmtP(ex.coinlore_change_7d):'N/A'),
+      kv('Rang', ex.coinlore_rank!=null?'#'+ex.coinlore_rank:'N/A'),
+      kv('Source', 'CoinLore API (sans clé)', 'blue'),
+    ].join('');
+  })();
+
+  document.getElementById('m-cr').innerHTML = [
+    kv('Prix USD', EX.coinranking_price!=null?'$'+fmt(EX.coinranking_price):'N/A'),
+    kv('Source', 'CoinRanking API (sans clé)', 'blue'),
+  ].join('');
+
+  document.getElementById('m-alt').innerHTML = [
+    kv('Fear & Greed', d.fear_greed_value!=null?d.fear_greed_value+' — '+(d.fear_greed_label||''):'N/A'),
+    kv('Hier (F&G)', d.fear_greed_previous!=null?d.fear_greed_previous+' — '+(d.fear_greed_prev_label||''):'N/A'),
+    kv('Prix Alt.me', d.altme_price!=null?'$'+fmt(d.altme_price):'N/A'),
+    kv('Change 24h', d.altme_change!=null?fmtP(d.altme_change):'N/A'),
+    kv('Market Cap', d.altme_mcap!=null?'$'+fmtV(d.altme_mcap):'N/A'),
+    kv('Source', 'Alternative.me', 'blue'),
+  ].join('');
+
+  const s = STOOQ;
+  document.getElementById('m-stooq').innerHTML = !s || Object.keys(s).length<3 ? '<p class="err">Données Stooq non disponibles</p>' : [
+    kv('Close actuel', s.close_latest!=null?'$'+fmt(s.close_latest,2):'N/A'),
+    kv('High 30j', s.high_30d!=null?'$'+fmt(s.high_30d,2):'N/A'),
+    kv('Low 30j', s.low_30d!=null?'$'+fmt(s.low_30d,2):'N/A'),
+    kv('Open 30j ago', s.open_30d!=null?'$'+fmt(s.open_30d,2):'N/A'),
+    kv('Performance 30j', s.perf_30d!=null?fmtP(s.perf_30d):'N/A'),
+    kv('Vol moyen 30j', s.avg_vol!=null?fmtV(s.avg_vol):'N/A'),
+    kv('Jours de données', s.days_available!=null?s.days_available:'N/A'),
+    kv('Source', 'Stooq CSV', 'blue'),
+  ].join('');
+}
+
+// ══════ ON-CHAIN ════════════════════════════════════════════
+function renderOnchain() {
+  const d = DATA;
+  document.getElementById('oc-val').innerHTML = [
+    kv('MVRV Ratio', d.mvrv!=null?Number(d.mvrv).toFixed(4):'N/A', d.mvrv>3?'neg':d.mvrv<1?'pos':'orange'),
+    kv('Realized Cap USD', d.realized_cap_usd!=null?'$'+fmtV(d.realized_cap_usd):'N/A'),
+    kv('NUPL', d.nupl!=null?Number(d.nupl).toFixed(4):'N/A', d.nupl>0.75?'neg':d.nupl<0?'pos':'orange'),
+    kv('Puell Multiple', d.puell_multiple!=null?Number(d.puell_multiple).toFixed(4):'N/A'),
+    kv('Mayer Multiple', d.mayer_multiple!=null?Number(d.mayer_multiple).toFixed(4):'N/A'),
+    kv('Supply dans profit', d.supply_profit_pct!=null?Number(d.supply_profit_pct).toFixed(2)+'%':'N/A'),
+    kv('ROI depuis 1an', d.roi_1y!=null?fmtP(d.roi_1y*100):'N/A'),
+    kv('Flux net exchanges', d.net_flow!=null?fmtV(Math.abs(d.net_flow))+(d.net_flow<0?' sortie':' entrée'):'N/A'),
+    kv('Source', 'CoinMetrics Community', 'blue'),
+  ].join('');
+
+  document.getElementById('oc-adp').innerHTML = [
+    kv('Adresses actives', d.active_addresses!=null?fmtV(d.active_addresses):'N/A'),
+    kv('TXs réseau', d.tx_count!=null?fmtV(d.tx_count):'N/A'),
+    kv('Vol transferts USD', d.transfer_vol_usd!=null?'$'+fmtV(d.transfer_vol_usd):'N/A'),
+    kv('Vol ajusté USD', d.adjusted_vol_usd!=null?'$'+fmtV(d.adjusted_vol_usd):'N/A'),
+    kv('Supply achetée >1j', d.supply_1d!=null?fmtV(d.supply_1d)+'BTC':'N/A'),
+    kv('Supply >1 an (HODL)', d.supply_1y!=null?fmtV(d.supply_1y)+'BTC':'N/A'),
+    kv('Hash rate (TH/s)', d.hash_rate!=null?fmtV(d.hash_rate):'N/A'),
+    kv('Difficulté', d.difficulty!=null?fmtV(d.difficulty):'N/A'),
+    kv('Source', 'CoinMetrics Community', 'blue'),
+  ].join('');
+
+  document.getElementById('oc-roi').innerHTML = [
+    kv('ROI 3 mois', d.roi_3m!=null?fmtP(d.roi_3m*100):'N/A'),
+    kv('ROI 6 mois', d.roi_6m!=null?fmtP(d.roi_6m*100):'N/A'),
+    kv('ROI 1 an', d.roi_1y!=null?fmtP(d.roi_1y*100):'N/A'),
+    kv('Miners Revenue', d.miners_revenue!=null?'$'+fmtV(d.miners_revenue):'N/A'),
+    kv('Récompense bloc actuelle', '3.125 BTC'),
+    kv('Prochain halving ~', '2028'),
+    kv('Source', 'CoinMetrics + Blockchain.info', 'blue'),
+  ].join('');
+
+  document.getElementById('oc-sopr').innerHTML = [
+    kv('aSOPR', d.asopr!=null?Number(d.asopr).toFixed(5):'N/A', d.asopr>1.02?'pos':d.asopr<0.98?'neg':''),
+    kv('SOPR', d.sopr!=null?Number(d.sopr).toFixed(5):'N/A'),
+    kv('LTH Realized Price', d.lth_realized!=null?'$'+fmt(d.lth_realized):'N/A'),
+    kv('STH Realized Price', d.sth_realized!=null?'$'+fmt(d.sth_realized):'N/A'),
+    kv('Source', 'BGR bitcoin-data.com', 'blue'),
+  ].join('');
+
+  document.getElementById('oc-whale').innerHTML = [
+    kv('Baleines >1000 BTC', d.whale_count!=null?fmt(d.whale_count):'N/A'),
+    kv('Baleines variation 30j', d.whale_change_30d!=null?fmtP(d.whale_change_30d):'N/A'),
+    kv('LTH MVRV proxy', d.lth_mvrv!=null?Number(d.lth_mvrv).toFixed(3):'N/A'),
+    kv('STH MVRV proxy', d.sth_mvrv!=null?Number(d.sth_mvrv).toFixed(3):'N/A'),
+    kv('Source', 'BGR bitcoin-data.com', 'blue'),
+  ].join('');
+
+  document.getElementById('oc-nrpl').innerHTML = [
+    kv('NRPL USD', d.nrpl_usd!=null?'$'+fmtV(d.nrpl_usd):'N/A'),
+    kv('NRPL BTC', d.nrpl_btc!=null?Number(d.nrpl_btc).toFixed(4)+'BTC':'N/A'),
+    kv('Flux sorties exch', d.exchange_outflow!=null?fmtV(d.exchange_outflow):'N/A'),
+    kv('Flux entrées exch', d.exchange_inflow!=null?fmtV(d.exchange_inflow):'N/A'),
+    kv('Source', 'BGR bitcoin-data.com', 'blue'),
+  ].join('');
+
+  // Nouvelles cartes v9
+  document.getElementById('oc-deep').innerHTML = [
+    kv('Adresses actives', d.cm_active_addresses!=null?fmt(d.cm_active_addresses):'N/A', 'green'),
+    kv('NVT Ratio ajusté', d.cm_nvt_adj!=null?Number(d.cm_nvt_adj).toFixed(2):'N/A', d.cm_nvt_adj>90?'neg':d.cm_nvt_adj<30?'pos':''),
+    kv('Supply active 1an', d.cm_sply_act_1yr_btc!=null?fmtV(d.cm_sply_act_1yr_btc)+' BTC':'N/A'),
+    kv('Vol transferts adj', d.cm_tx_tfr_val_adj_usd!=null?'$'+fmtV(d.cm_tx_tfr_val_adj_usd):'N/A'),
+    kv('Supply actuelle', d.cm_supply_current!=null?fmtV(d.cm_supply_current)+' BTC':'N/A'),
+    kv('Source', 'CoinMetrics Community', 'blue'),
+  ].join('');
+
+  document.getElementById('oc-positions').innerHTML = [
+    kv('Longs BTC (Bitfinex)', d.bfx_longs_btc!=null?Number(d.bfx_longs_btc).toFixed(2)+' BTC':'N/A', 'pos'),
+    kv('Shorts BTC (Bitfinex)', d.bfx_shorts_btc!=null?Number(d.bfx_shorts_btc).toFixed(2)+' BTC':'N/A', 'neg'),
+    kv('Ratio L/S', d.bfx_ls_ratio!=null?Number(d.bfx_ls_ratio).toFixed(3):'N/A', d.bfx_ls_ratio>1?'pos':'neg'),
+    kv('Longs/Shorts Binance', d.bnf_long_pct!=null?`${Number(d.bnf_long_pct).toFixed(1)}% / ${Number(d.bnf_short_pct).toFixed(1)}%`:'N/A'),
+    kv('Signal L/S', d.bnf_ls_ratio>1.1?'Surbull 🔴':d.bnf_ls_ratio<0.9?'Overbear 🔵':'Neutre 🟢'),
+    kv('Source', 'Bitfinex Stats + Binance FAPI', 'blue'),
+  ].join('');
+
+  document.getElementById('oc-dvol').innerHTML = [
+    kv('Deribit DVol (actuel)', d.deribit_dvol!=null?Number(d.deribit_dvol).toFixed(1)+'%':'N/A', d.deribit_dvol>80?'neg':d.deribit_dvol>60?'orange':'pos'),
+    kv('Var DVol', d.deribit_dvol_change!=null?(d.deribit_dvol_change>0?'+':'')+Number(d.deribit_dvol_change).toFixed(1)+'%':'N/A'),
+    kv('Interprétation', d.deribit_dvol>80?'Volatilité extrême':d.deribit_dvol>60?'Volatilité élevée':d.deribit_dvol>40?'Volatilité modérée':'Volatilité faible'),
+    kv('Funding Rate moyen', d.avg_funding_rate_pct!=null?(d.avg_funding_rate_pct>0?'+':'')+Number(d.avg_funding_rate_pct).toFixed(4)+'%':'N/A'),
+    kv('Source', 'Deribit DVol API', 'blue'),
+  ].join('');
+}
+
+// ══════ TECHNIQUE ═══════════════════════════════════════════
+function renderTech() {
+  const d = DATA;
+  document.getElementById('t-ma').innerHTML = [
+    kv('Close actuel', d.close_latest!=null?'$'+fmt(d.close_latest,2):'N/A'),
+    kv('VWAP (Kraken)', d.vwap!=null?'$'+fmt(d.vwap,2):'N/A'),
+    kv('MA 7j', d.ma7!=null?'$'+fmt(d.ma7):'N/A'),
+    kv('MA 30j', d.ma30!=null?'$'+fmt(d.ma30):'N/A'),
+    kv('MA 200j', d.ma200!=null?'$'+fmt(d.ma200):'N/A'),
+    kv('Prix vs MA 7j', d.price_to_ma7!=null?fmtP(d.price_to_ma7):'N/A'),
+    kv('Prix vs MA 30j', d.price_to_ma30!=null?fmtP(d.price_to_ma30):'N/A'),
+    kv('Prix vs MA 200j', d.price_to_ma200!=null?fmtP(d.price_to_ma200):'N/A'),
+    kv('Source', 'Kraken OHLC + calcul', 'blue'),
+  ].join('');
+
+  document.getElementById('t-ind').innerHTML = [
+    kv('RSI 14j', d.rsi_14!=null?Number(d.rsi_14).toFixed(2):'N/A', d.rsi_14>70?'neg':d.rsi_14<30?'pos':'blue'),
+    kv('Interprétation RSI', d.rsi_14>70?'Suracheté':d.rsi_14<30?'Survendu':'Neutre'),
+    kv('Mayer Multiple', d.mayer_multiple!=null?Number(d.mayer_multiple).toFixed(4):'N/A'),
+    kv('Mayer Interprétation', d.mayer_multiple>2.4?'Bull extrême':d.mayer_multiple<0.8?'Achat':d.mayer_multiple>1?'Haussier':'Baissier'),
+    kv('Source', 'Kraken OHLC calculé', 'blue'),
+  ].join('');
+
+  document.getElementById('t-risk').innerHTML = [
+    kv('Volatilité 30j ann.', d.volatility_30d!=null?Number(d.volatility_30d).toFixed(2)+'%':'N/A'),
+    kv('Sharpe 30j', d.sharpe_30d!=null?Number(d.sharpe_30d).toFixed(4):'N/A', d.sharpe_30d>2?'pos':d.sharpe_30d>1?'green':d.sharpe_30d<0?'neg':''),
+    kv('Spread arbitrage', d.arbitrage_spread_pct!=null?Number(d.arbitrage_spread_pct).toFixed(4)+'%':'N/A'),
+    kv('Plus haut exchange', d.highest_exchange||'N/A'),
+    kv('Plus bas exchange', d.lowest_exchange||'N/A'),
+    kv('Source', 'Calculs internes + Kraken', 'blue'),
+  ].join('');
+
+  const s = STOOQ;
+  document.getElementById('t-kraken').innerHTML = [
+    kv('Open 30j ago', s.open_30d!=null?'$'+fmt(s.open_30d,2):'N/A'),
+    kv('High 30j', s.high_30d!=null?'$'+fmt(s.high_30d,2):'N/A'),
+    kv('Low 30j', s.low_30d!=null?'$'+fmt(s.low_30d,2):'N/A'),
+    kv('Close dernier', s.close_latest!=null?'$'+fmt(s.close_latest,2):'N/A'),
+    kv('Volume moyen 30j', s.avg_vol!=null?fmtV(s.avg_vol):'N/A'),
+    kv('Performance 30j', s.perf_30d!=null?fmtP(s.perf_30d):'N/A'),
+    kv('Jours disponibles', s.days_available||'N/A'),
+    kv('Source', 'Stooq CSV + Kraken OHLC', 'blue'),
+  ].join('');
+}
+
+// ══════ RESEAU ══════════════════════════════════════════════
+function renderReseau() {
+  const d = DATA; const n = NET;
+  document.getElementById('r-mempool').innerHTML = [
+    kv('Frais fastest (sat/vB)', d.fee_fastest_sat!=null?d.fee_fastest_sat:'N/A'),
+    kv('Frais moyen (sat/vB)', d.fee_avg_sat!=null?d.fee_avg_sat:'N/A'),
+    kv('Frais économique', d.fee_eco_sat!=null?d.fee_eco_sat:'N/A'),
+    kv('Frais minimum', d.fee_min_sat!=null?d.fee_min_sat:'N/A'),
+    kv('TXs en attente', d.mempool_count!=null?fmt(d.mempool_count):'N/A'),
+    kv('Taille mempool (MB)', d.mempool_size_mb!=null?Number(d.mempool_size_mb).toFixed(2):'N/A'),
+    kv('Hashrate (EH/s)', d.hashrate_eh!=null?Number(d.hashrate_eh).toFixed(2):'N/A'),
+    kv('Difficulté (T)', d.difficulty_t!=null?Number(d.difficulty_t).toFixed(2):'N/A'),
+    kv('Prochain ajustement', d.blocks_till_adjust!=null?d.blocks_till_adjust+' blocs':'N/A'),
+    kv('Source', 'Mempool.space API', 'blue'),
+  ].join('');
+
+  document.getElementById('r-blockchair').innerHTML = [
+    kv('Blocs total', d.blocks_total!=null?fmt(d.blocks_total):'N/A'),
+    kv('TXs total réseau', d.blockchain_tx_total!=null?fmtV(d.blockchain_tx_total):'N/A'),
+    kv('UTXOs total', d.utxo_count!=null?fmtV(d.utxo_count):'N/A'),
+    kv('Taille blockchain (GB)', d.blockchain_size_gb!=null?Number(d.blockchain_size_gb).toFixed(2):'N/A'),
+    kv('TXs dernières 24h', d.transactions_24h!=null?fmtV(d.transactions_24h):'N/A'),
+    kv('Vol on-chain 24h (sat)', d.bc_vol_24h_sat!=null?fmtV(d.bc_vol_24h_sat)+' sat':'N/A'),
+    kv('Source', 'Blockchair API', 'blue'),
+  ].join('');
+
+  document.getElementById('r-bcinfo').innerHTML = [
+    kv('Prix marché (USD)', d.bcinfo_price!=null?'$'+fmt(d.bcinfo_price):'N/A'),
+    kv('Hash rate (GH/s)', d.bcinfo_hash!=null?fmtV(d.bcinfo_hash):'N/A'),
+    kv('Blocs aujourd\'hui', d.blocks_today!=null?d.blocks_today:'N/A'),
+    kv('Revenus mineurs/j', d.miners_revenue!=null?'$'+fmtV(d.miners_revenue):'N/A'),
+    kv('TXs dernières 24h', d.tx_24h!=null?fmtV(d.tx_24h):'N/A'),
+    kv('Difficulté', d.diff_raw!=null?fmtV(d.diff_raw):'N/A'),
+    kv('Supply totale (BTC)', d.supply_btc!=null?fmt(d.supply_btc):'N/A'),
+    kv('Taille (bytes)', d.blockchain_bytes!=null?fmtV(d.blockchain_bytes):'N/A'),
+    kv('Source', 'Blockchain.info', 'blue'),
+  ].join('');
+
+  document.getElementById('r-blockstream').innerHTML = [
+    kv('Hauteur de bloc', d.block_height!=null?fmt(d.block_height):'N/A'),
+    kv('TXs dans mempool', d.mempool_count!=null?fmt(d.mempool_count):'N/A'),
+    kv('Source', 'Blockstream.info', 'blue'),
+  ].join('');
+
+  document.getElementById('r-bitnodes').innerHTML = [
+    kv('Nœuds P2P totaux', d.bitnodes_total!=null?fmt(d.bitnodes_total):'N/A'),
+    kv('Source', 'Bitnodes.io', 'blue'),
+  ].join('');
+
+  const pools = d.mining_pools;
+  if(pools && typeof pools === 'object') {
+    const sorted = Object.entries(pools).sort((a,b)=>b[1]-a[1]).slice(0,6);
+    document.getElementById('r-pools').innerHTML = sorted.map(([name,pct]) =>
+      `<div class="kv"><span class="k">${name}</span><span class="v">${Number(pct).toFixed(1)}%</span></div>`
+    ).join('')+'<div class="kv"><span class="k" style="color:var(--text3);font-size:10px">Source: Blockchain.info</span></div>';
+  } else {
+    document.getElementById('r-pools').innerHTML = '<p class="err">Données pools non disponibles</p>';
+  }
+
+  // Derniers blocs (Mempool.space)
+  document.getElementById('r-blocks').innerHTML = [
+    kv('Hauteur bloc', d.last_block_height!=null?fmt(d.last_block_height):'N/A', 'orange'),
+    kv('TXs dans bloc', d.last_block_txcount!=null?fmt(d.last_block_txcount):'N/A'),
+    kv('Taille bloc', d.last_block_size_kb!=null?Number(d.last_block_size_kb).toFixed(1)+' KB':'N/A'),
+    kv('Frais médian', d.last_block_median_fee_rate!=null?d.last_block_median_fee_rate+' sat/vB':'N/A'),
+    kv('Pool mineur', d.last_block_pool||'N/A', 'blue'),
+    kv('Moy TXs (10 blocs)', d.blocks_avg_tx_count!=null?fmt(d.blocks_avg_tx_count):'N/A'),
+    kv('Moy taille (10 blocs)', d.blocks_avg_size_kb!=null?Number(d.blocks_avg_size_kb).toFixed(1)+' KB':'N/A'),
+    kv('Source', 'Mempool.space /v1/blocks', 'blue'),
+  ].join('');
+
+  // Blockchain.info Charts
+  document.getElementById('r-bcharts').innerHTML = [
+    kv('Hashrate actuel', d.bchart_hashrate_now_eh!=null?Number(d.bchart_hashrate_now_eh).toFixed(2)+' EH/s':'N/A', 'orange'),
+    kv('Hashrate moy 30j', d.bchart_hashrate_30d_avg_eh!=null?Number(d.bchart_hashrate_30d_avg_eh).toFixed(2)+' EH/s':'N/A'),
+    kv('TXs aujourd\'hui', d.bchart_txcount_today!=null?fmt(d.bchart_txcount_today):'N/A'),
+    kv('Moy TXs/j (30j)', d.bchart_txcount_30d_avg!=null?fmt(d.bchart_txcount_30d_avg):'N/A'),
+    kv('Frais USD (7j)', d.bchart_fees_usd_today!=null?'$'+fmt(d.bchart_fees_usd_today,2):'N/A'),
+    kv('Source', 'Blockchain.info Charts API', 'blue'),
+  ].join('');
+
+  // WhatToMine
+  document.getElementById('r-wtm').innerHTML = [
+    kv('Profitabilité', d.wtm_btc_profitability!=null?Number(d.wtm_btc_profitability).toFixed(1)+'%':'N/A', d.wtm_btc_profitability>100?'pos':d.wtm_btc_profitability<80?'neg':''),
+    kv('Nethash (EH/s)', d.wtm_btc_nethash_th!=null?(Number(d.wtm_btc_nethash_th)/1e18).toFixed(2)+' EH/s':'N/A'),
+    kv('Difficulté', d.wtm_btc_difficulty!=null?fmtV(d.wtm_btc_difficulty):'N/A'),
+    kv('Récompense bloc', d.wtm_btc_block_reward!=null?Number(d.wtm_btc_block_reward).toFixed(4)+' BTC':'N/A'),
+    kv('Temps par bloc', d.wtm_btc_block_time!=null?Number(d.wtm_btc_block_time).toFixed(1)+' sec':'N/A'),
+    kv('Source', 'WhatToMine.com API', 'blue'),
+  ].join('');
+}
+
+// ══════ LIGHTNING ════════════════════════════════════════════
+function renderLightning() {
+  const d = DATA;
+  document.getElementById('ln-nodes').textContent = d.ln_nodes!=null?fmt(d.ln_nodes):'---';
+  document.getElementById('ln-chan').textContent = d.ln_channels!=null?fmt(d.ln_channels):'---';
+  document.getElementById('ln-cap-btc').textContent = d.ln_capacity_btc!=null?fmt(d.ln_capacity_btc)+' BTC':'---';
+  document.getElementById('ln-cap-usd').textContent = d.ln_capacity_usd!=null?'$'+fmtV(d.ln_capacity_usd):'---';
+  document.getElementById('ln-avg-cap').textContent = d.ln_avg_capacity!=null?fmt(d.ln_avg_capacity):'---';
+  document.getElementById('ln-nodes-src').textContent = 'Mempool.space';
+  document.getElementById('ln-chan-src').textContent = 'Mempool.space';
+
+  document.getElementById('ln-mempool').innerHTML = [
+    kv('Nœuds', d.ln_nodes!=null?fmt(d.ln_nodes):'N/A', 'blue'),
+    kv('Canaux', d.ln_channels!=null?fmt(d.ln_channels):'N/A', 'purple'),
+    kv('Capacité totale (BTC)', d.ln_capacity_btc!=null?fmt(d.ln_capacity_btc):'N/A', 'orange'),
+    kv('Capacité totale (USD)', d.ln_capacity_usd!=null?'$'+fmtV(d.ln_capacity_usd):'N/A'),
+    kv('Capacité moy/canal (sat)', d.ln_avg_capacity!=null?fmt(d.ln_avg_capacity):'N/A'),
+    kv('Source', 'Mempool.space Lightning API', 'blue'),
+  ].join('');
+
+  document.getElementById('ln-1ml').innerHTML = [
+    kv('Nœuds 1ML', d.ln_1ml_nodes!=null?fmt(d.ln_1ml_nodes):'N/A', 'blue'),
+    kv('Canaux 1ML', d.ln_1ml_channels!=null?fmt(d.ln_1ml_channels):'N/A'),
+    kv('Var nœuds 30j', d.ln_1ml_node_growth!=null?fmtP(d.ln_1ml_node_growth):'N/A'),
+    kv('Var canaux 30j', d.ln_1ml_chan_growth!=null?fmtP(d.ln_1ml_chan_growth):'N/A'),
+    kv('Source', '1ML.com Statistics API', 'blue'),
+  ].join('');
+}
+
+// ══════ EXCHANGES USD ═══════════════════════════════════════
+function renderExchanges() {
+  const ex = EX; const d = DATA;
+  const count = ex.exchange_count || d.exchange_count;
+  const avg = ex.avg_price || d.avg_price;
+  const spread = ex.arbitrage_spread_pct || d.arbitrage_spread_pct;
+
+  document.getElementById('ex-count').textContent = count||'--';
+  document.getElementById('ex-avg').textContent = avg?'$'+fmt(avg,2):'---';
+  document.getElementById('ex-spread').textContent = spread?Number(spread).toFixed(4)+'%':'--';
+  document.getElementById('ex-high').textContent = (ex.highest_exchange||d.highest_exchange)||'--';
+  document.getElementById('ex-low').textContent = (ex.lowest_exchange||d.lowest_exchange)||'--';
+
+  // Exchange table
+  const prices = (ex.exchange_prices||d.exchange_prices||[]);
+  const tbody = document.querySelector('#ex-table tbody');
+  tbody.innerHTML = prices.map((row,i)=> {
+    const diff = avg&&row.price ? ((row.price-avg)/avg*100) : 0;
+    const barW = Math.min(Math.abs(diff)*500, 100);
+    return `<tr>
+      <td class="rank">${i+1}</td>
+      <td class="ex-name">${row.name}</td>
+      <td class="ex-price">$${fmt(row.price,2)}</td>
+      <td style="color:${diff>0?'var(--green)':diff<0?'var(--red)':'var(--text2)'};font-weight:600">${diff>0?'+':''}${diff.toFixed(4)}%</td>
+      <td style="width:80px"><span class="spread-bar" style="width:${barW}%;background:${Math.abs(diff)<0.1?'var(--green)':Math.abs(diff)<0.5?'var(--yellow)':'var(--red)'}"></span></td>
+    </tr>`;
+  }).join('');
+
+  // Deribit details
+  document.getElementById('ex-deribit').innerHTML = [
+    kv('Index Price', d.deribit_index_price!=null?'$'+fmt(d.deribit_index_price,2):'N/A'),
+    kv('Perpétuel BTC', d.deribit_perp_price!=null?'$'+fmt(d.deribit_perp_price,2):'N/A'),
+    kv('Funding Rate', d.deribit_funding!=null?Number(d.deribit_funding*100).toFixed(6)+'%':'N/A'),
+    kv('Open Interest', d.deribit_oi!=null?'$'+fmtV(d.deribit_oi):'N/A'),
+    kv('Source', 'Deribit.com API', 'blue'),
+  ].join('');
+
+  // Poloniex details
+  document.getElementById('ex-poloniex').innerHTML = [
+    kv('Prix', ex.poloniex_price!=null?'$'+fmt(ex.poloniex_price,2):'N/A'),
+    kv('High 24h', ex.poloniex_high_24h!=null?'$'+fmt(ex.poloniex_high_24h,2):'N/A'),
+    kv('Low 24h', ex.poloniex_low_24h!=null?'$'+fmt(ex.poloniex_low_24h,2):'N/A'),
+    kv('Volume USD 24h', ex.poloniex_vol_usd!=null?'$'+fmtV(ex.poloniex_vol_usd):'N/A'),
+    kv('Variation 24h', ex.poloniex_change_24h!=null?fmtP(ex.poloniex_change_24h):'N/A'),
+    kv('Source', 'Poloniex API', 'blue'),
+  ].join('');
+
+  // Crypto.com details
+  document.getElementById('ex-cdotcom').innerHTML = [
+    kv('Prix (Ask)', ex.cdotcom_price!=null?'$'+fmt(ex.cdotcom_price,2):'N/A'),
+    kv('High 24h', ex.cdotcom_high_24h!=null?'$'+fmt(ex.cdotcom_high_24h,2):'N/A'),
+    kv('Low 24h', ex.cdotcom_low_24h!=null?'$'+fmt(ex.cdotcom_low_24h,2):'N/A'),
+    kv('Volume USD 24h', ex.cdotcom_vol_usd!=null?'$'+fmtV(ex.cdotcom_vol_usd):'N/A'),
+    kv('Variation 24h', ex.cdotcom_change_24h!=null?fmtP(ex.cdotcom_change_24h):'N/A'),
+    kv('Source', 'Crypto.com API v2', 'blue'),
+  ].join('');
+
+  // BitMart
+  document.getElementById('ex-bitmart').innerHTML = [
+    kv('Prix', ex.bitmart_price!=null?'$'+fmt(ex.bitmart_price,2):'N/A'),
+    kv('High 24h', ex.bitmart_high_24h!=null?'$'+fmt(ex.bitmart_high_24h,2):'N/A'),
+    kv('Low 24h', ex.bitmart_low_24h!=null?'$'+fmt(ex.bitmart_low_24h,2):'N/A'),
+    kv('Volume USD 24h', ex.bitmart_vol_usd!=null?'$'+fmtV(ex.bitmart_vol_usd):'N/A'),
+    kv('Variation 24h', ex.bitmart_change_24h!=null?fmtP(ex.bitmart_change_24h):'N/A'),
+    kv('Source', 'BitMart API', 'blue'),
+  ].join('');
+
+  // BTSE
+  document.getElementById('ex-btse').innerHTML = [
+    kv('Prix Last', ex.btse_price!=null?'$'+fmt(ex.btse_price,2):'N/A'),
+    kv('Index Price', ex.btse_index_price!=null?'$'+fmt(ex.btse_index_price,2):'N/A'),
+    kv('Source', 'BTSE Exchange API', 'blue'),
+  ].join('');
+
+  // CoinLore
+  document.getElementById('ex-coinlore').innerHTML = [
+    kv('Prix USD', ex.coinlore_price!=null?'$'+fmt(ex.coinlore_price,2):'N/A'),
+    kv('Market Cap', ex.coinlore_market_cap!=null?'$'+fmtV(ex.coinlore_market_cap):'N/A'),
+    kv('Volume 24h', ex.coinlore_vol_24h!=null?'$'+fmtV(ex.coinlore_vol_24h):'N/A'),
+    kv('Variation 24h', ex.coinlore_change_24h!=null?fmtP(ex.coinlore_change_24h):'N/A'),
+    kv('Variation 7j', ex.coinlore_change_7d!=null?fmtP(ex.coinlore_change_7d):'N/A'),
+    kv('Rang global', ex.coinlore_rank!=null?'#'+ex.coinlore_rank:'N/A'),
+    kv('Source', 'CoinLore API', 'blue'),
+  ].join('');
+
+  // WBTC DEX
+  document.getElementById('ex-dex').innerHTML = [
+    kv('Prix WBTC/USD', d.dex_wbtc_price_usd!=null?'$'+fmt(d.dex_wbtc_price_usd,2):'N/A'),
+    kv('Liquidité USD', d.dex_liquidity!=null?'$'+fmtV(d.dex_liquidity):'N/A'),
+    kv('Volume 24h USD', d.dex_volume_24h!=null?'$'+fmtV(d.dex_volume_24h):'N/A'),
+    kv('Pool Uniswap', d.dex_pair||'WBTC/ETH'),
+    kv('Réseau', 'Ethereum Mainnet'),
+    kv('Source', 'DexScreener API', 'blue'),
+  ].join('');
+}
+
+// ══════ INTERNATIONAL ═══════════════════════════════════════
+function renderIntl() {
+  const i = INTL; const d = DATA;
+
+  // FX grid
+  const fxPairs = [
+    {cur:'JPY',flag:'🇯🇵',ref:i.btc_jpy_ref,rate:1/159},
+    {cur:'KRW',flag:'🇰🇷',ref:i.btc_krw_ref,rate:1/1501},
+    {cur:'AUD',flag:'🇦🇺',ref:i.btc_aud_ref,rate:1/1.42},
+    {cur:'BRL',flag:'🇧🇷',ref:i.btc_brl_ref,rate:1/5.26},
+    {cur:'ZAR',flag:'🇿🇦',ref:i.btc_zar_ref,rate:1/16.98},
+    {cur:'MXN',flag:'🇲🇽',ref:i.btc_mxn_ref,rate:1/17.88},
+    {cur:'INR',flag:'🇮🇳',ref:i.btc_inr_ref,rate:1/93.63},
+    {cur:'IDR',flag:'🇮🇩',ref:i.btc_idr_ref,rate:1/16964},
+    {cur:'TRY',flag:'🇹🇷',ref:i.btc_try_ref||i.btc_try},
+    {cur:'EUR',flag:'🇪🇺',ref:i.btc_eur_ref||i.btc_eur},
+    {cur:'GBP',flag:'🇬🇧',ref:i.btc_gbp_ref||i.btc_gbp},
+  ];
+  document.getElementById('intl-fx').innerHTML = fxPairs.map(f=>
+    `<div class="card-sm"><div style="font-size:18px">${f.flag}</div><div style="font-weight:700;color:var(--orange);font-size:12px">${f.cur}</div><div style="font-size:11px">${f.ref!=null?'₿ = '+fmt(f.ref)+' '+f.cur:'N/A'}</div></div>`
+  ).join('');
+
+  // Japan
+  document.getElementById('intl-jp').innerHTML = [
+    mkExCard('bitFlyer', '🇯🇵', i.bitflyer_price_jpy, 'JPY', i.bitflyer_price_usd, i.bitflyer_vol_jpy, i.bitflyer_ask_jpy, i.bitflyer_bid_jpy),
+    mkExCard('Coincheck', '🇯🇵', i.coincheck_price_jpy, 'JPY', i.coincheck_price_usd, i.coincheck_vol_jpy),
+    mkExCard('Zaif', '🇯🇵', i.zaif_price_jpy, 'JPY', i.zaif_price_usd, null, null, null, i.zaif_vwap_jpy),
+  ].join('');
+
+  // Korea
+  document.getElementById('intl-kr').innerHTML = [
+    mkExCard('Upbit', '🇰🇷', i.upbit_price_krw, 'KRW', i.upbit_price_usd, i.upbit_vol_krw),
+    mkExCard('Bithumb', '🇰🇷', i.bithumb_price_krw, 'KRW', i.bithumb_price_usd, null, i.bithumb_ask_krw, i.bithumb_bid_krw),
+    mkExCard('Korbit', '🇰🇷', i.korbit_price_krw, 'KRW', i.korbit_price_usd, i.korbit_vol_btc),
+  ].join('');
+
+  // Australia + Russia
+  document.getElementById('intl-au-ru').innerHTML = [
+    mkExCard('BTCMarkets', '🇦🇺', i.btcmarkets_price_aud, 'AUD', i.btcmarkets_price_usd, i.btcmarkets_vol_btc, i.btcmarkets_ask_aud, i.btcmarkets_bid_aud),
+    mkExCard('Exmo', '🇷🇺', i.exmo_price_usd, 'USD', i.exmo_price_usd, i.exmo_vol_btc, null, null, null, 'Russie/Europe de l\'Est'),
+    `<div class="card"><div class="kv"><span class="k">Source</span><span class="v blue">Exmo + BTCMarkets API</span></div></div>`,
+  ].join('');
+
+  // Turkey
+  document.getElementById('intl-tr').innerHTML = [
+    mkExCard('BtcTurk', '🇹🇷', i.btcturk_price_usdt, 'USDT', i.btcturk_price_usd, i.btcturk_vol_btc),
+    mkExCard('Paribu', '🇹🇷', i.paribu_price_try, 'TRY', i.paribu_price_usd),
+  ].join('');
+
+  // Brazil
+  document.getElementById('intl-br').innerHTML = [
+    mkExCard('Mercado Bitcoin', '🇧🇷', i.mercado_price_brl, 'BRL', i.mercado_price_usd, i.mercado_vol_brl),
+    mkExCard('Foxbit', '🇧🇷', i.foxbit_price_brl||i.foxbit_price_usd, i.foxbit_price_brl?'BRL':'USD', i.foxbit_price_usd, null, null, null, null, 'foxbit.com.br'),
+    mkExCard('NovaDax', '🇧🇷', i.novadax_price_brl, 'BRL', i.novadax_price_usd, i.novadax_vol_brl),
+  ].join('');
+
+  // South Africa
+  document.getElementById('intl-za').innerHTML = [
+    mkExCard('Luno', '🇿🇦', i.luno_price_zar, 'ZAR', i.luno_price_usd, i.luno_vol_24h, i.luno_ask_zar, i.luno_bid_zar),
+    mkExCard('VALR', '🇿🇦', i.valr_price_zar, 'ZAR', i.valr_price_usd, null, i.valr_ask_zar, i.valr_bid_zar),
+  ].join('');
+
+  // Mexico
+  document.getElementById('intl-mx').innerHTML = [
+    mkExCard('Bitso', '🇲🇽', i.bitso_price_mxn, 'MXN', i.bitso_price_usd, i.bitso_vol, i.bitso_ask_mxn, i.bitso_bid_mxn),
+  ].join('');
+
+  // India
+  document.getElementById('intl-in').innerHTML = [
+    mkExCard('CoinDCX', '🇮🇳', i.coindcx_price_inr, 'INR', i.coindcx_price_usd, i.coindcx_vol, null, null, null, 'coindcx.com'),
+    mkExCard('WazirX', '🇮🇳', i.wazirx_price_inr, 'INR', i.wazirx_price_usd, i.wazirx_vol),
+  ].join('');
+
+  // Indonesia
+  document.getElementById('intl-id').innerHTML = [
+    mkExCard('Indodax', '🇮🇩', i.indodax_price_idr, 'IDR', i.indodax_price_usd, i.indodax_vol_btc),
+  ].join('');
+}
+
+// mkExCard helper — card for international exchange
+function mkExCard(name, flag, priceLocal, cur, priceUsd, vol, ask, bid, vwap, note) {
+  return `<div class="card"><div class="kv"><span class="k">${flag} ${name}</span><span class="v orange">${priceLocal!=null?fmt(priceLocal)+' '+cur:'<span class="err">N/A</span>'}</span></div>${priceUsd!=null?`<div class="kv"><span class="k">≈ USD</span><span class="v">$${fmt(priceUsd,2)}</span></div>`:''}${ask!=null?`<div class="kv"><span class="k">Ask</span><span class="v">${fmt(ask)+' '+cur}</span></div>`:''}${bid!=null?`<div class="kv"><span class="k">Bid</span><span class="v">${fmt(bid)+' '+cur}</span></div>`:''}${vol!=null?`<div class="kv"><span class="k">Volume</span><span class="v">${fmtV(vol)}</span></div>`:''}${vwap!=null?`<div class="kv"><span class="k">VWAP</span><span class="v">${fmt(vwap)+' '+cur}</span></div>`:''}${note?`<div class="kv"><span class="k">Source</span><span class="v blue" style="font-size:10px">${note}</span></div>`:''}</div>`;
+}
+
+// ══════ DERIVATIFS ══════════════════════════════════════════
+function renderDerivatives() {
+  const d = DATA; const drv = DRV;
+  document.getElementById('drv-funding').innerHTML = drv.avg_funding_rate_pct!=null?(drv.avg_funding_rate_pct>0?'+':'')+Number(drv.avg_funding_rate_pct).toFixed(4)+'%':'---';
+  document.getElementById('drv-funding').style.color = drv.avg_funding_rate_pct>0.05?'var(--red)':drv.avg_funding_rate_pct<-0.01?'var(--green)':'var(--text)';
+  document.getElementById('drv-ls').textContent = drv.bnf_ls_ratio!=null?Number(drv.bnf_ls_ratio).toFixed(3):'---';
+  document.getElementById('drv-oi').textContent = drv.bnf_oi_btc!=null?fmtV(drv.bnf_oi_btc)+' BTC':'---';
+  document.getElementById('drv-dvol').textContent = drv.deribit_dvol!=null?Number(drv.deribit_dvol).toFixed(1)+'%':'---';
+
+  document.getElementById('drv-binance').innerHTML = [
+    kv('Mark Price', drv.bnf_mark_price!=null?'$'+fmt(drv.bnf_mark_price,2):'N/A'),
+    kv('Index Price', drv.bnf_index_price!=null?'$'+fmt(drv.bnf_index_price,2):'N/A'),
+    kv('Funding Rate', drv.bnf_funding_rate!=null?(drv.bnf_funding_rate>0?'+':'')+Number(drv.bnf_funding_rate).toFixed(4)+'%':'N/A', drv.bnf_funding_rate>0.05?'neg':drv.bnf_funding_rate<-0.01?'pos':''),
+    kv('Open Interest', drv.bnf_oi_btc!=null?fmtV(drv.bnf_oi_btc)+' BTC':'N/A'),
+    kv('Volume 24h USD', drv.bnf_vol_usd!=null?'$'+fmtV(drv.bnf_vol_usd):'N/A'),
+    kv('Long/Short Ratio', drv.bnf_ls_ratio!=null?Number(drv.bnf_ls_ratio).toFixed(3):'N/A', drv.bnf_ls_ratio>1.1?'neg':drv.bnf_ls_ratio<0.9?'pos':''),
+    kv('Longs %', drv.bnf_long_pct!=null?Number(drv.bnf_long_pct).toFixed(1)+'%':'N/A'),
+    kv('Shorts %', drv.bnf_short_pct!=null?Number(drv.bnf_short_pct).toFixed(1)+'%':'N/A'),
+    kv('Variation 24h', drv.bnf_change_24h!=null?fmtP(drv.bnf_change_24h):'N/A'),
+    kv('Source', 'Binance FAPI', 'blue'),
+  ].join('');
+
+  document.getElementById('drv-kraken').innerHTML = [
+    kv('Symbole', drv.krf_symbol||'PF_XBTUSD'),
+    kv('Last Price', drv.krf_last_price!=null?'$'+fmt(drv.krf_last_price,2):'N/A'),
+    kv('Mark Price', drv.krf_mark_price!=null?'$'+fmt(drv.krf_mark_price,2):'N/A'),
+    kv('Funding Rate', drv.krf_funding_rate!=null?(drv.krf_funding_rate>0?'+':'')+Number(drv.krf_funding_rate).toFixed(4)+'%':'N/A'),
+    kv('Open Interest', drv.krf_oi_contracts!=null?fmtV(drv.krf_oi_contracts)+' contracts':'N/A'),
+    kv('Volume 24h', drv.krf_vol_24h!=null?fmtV(drv.krf_vol_24h):'N/A'),
+    kv('Source', 'Kraken Futures API', 'blue'),
+  ].join('');
+
+  document.getElementById('drv-bitmex').innerHTML = [
+    kv('Last Price', drv.bitmex_last_price!=null?'$'+fmt(drv.bitmex_last_price,2):'N/A'),
+    kv('Mark Price', drv.bitmex_mark_price!=null?'$'+fmt(drv.bitmex_mark_price,2):'N/A'),
+    kv('Funding Rate', drv.bitmex_funding_rate!=null?(drv.bitmex_funding_rate>0?'+':'')+Number(drv.bitmex_funding_rate).toFixed(4)+'%':'N/A'),
+    kv('Open Interest', drv.bitmex_oi_contracts!=null?fmtV(drv.bitmex_oi_contracts)+' contracts':'N/A'),
+    kv('Volume 24h BTC', drv.bitmex_vol_24h_btc!=null?Number(drv.bitmex_vol_24h_btc).toFixed(2)+' BTC':'N/A'),
+    kv('Source', 'BitMEX REST API', 'blue'),
+  ].join('');
+
+  document.getElementById('drv-hyper').innerHTML = [
+    kv('Mark Price', drv.hyper_mark_price!=null?'$'+fmt(drv.hyper_mark_price,2):'N/A'),
+    kv('Mid Price', drv.hyper_mid_price!=null?'$'+fmt(drv.hyper_mid_price,2):'N/A'),
+    kv('Funding Rate', drv.hyper_funding_rate!=null?(drv.hyper_funding_rate>0?'+':'')+Number(drv.hyper_funding_rate).toFixed(4)+'%':'N/A'),
+    kv('Open Interest USD', drv.hyper_oi_usd!=null?'$'+fmtV(drv.hyper_oi_usd):'N/A'),
+    kv('Volume 24h USD', drv.hyper_vol_24h_usd!=null?'$'+fmtV(drv.hyper_vol_24h_usd):'N/A'),
+    kv('Type', 'DEX Perpétuel (L1)'),
+    kv('Source', 'Hyperliquid.xyz API', 'blue'),
+  ].join('');
+
+  document.getElementById('drv-bitget').innerHTML = [
+    kv('Last Price', drv.bgf_last_price!=null?'$'+fmt(drv.bgf_last_price,2):'N/A'),
+    kv('Mark Price', drv.bgf_mark_price!=null?'$'+fmt(drv.bgf_mark_price,2):'N/A'),
+    kv('Index Price', drv.bgf_index_price!=null?'$'+fmt(drv.bgf_index_price,2):'N/A'),
+    kv('Funding Rate', drv.bgf_funding_rate!=null?(drv.bgf_funding_rate>0?'+':'')+Number(drv.bgf_funding_rate).toFixed(4)+'%':'N/A'),
+    kv('Open Interest USD', drv.bgf_oi_usd!=null?'$'+fmtV(drv.bgf_oi_usd):'N/A'),
+    kv('Source', 'Bitget USDT-Futures API', 'blue'),
+  ].join('');
+
+  document.getElementById('drv-bfxstats').innerHTML = [
+    kv('Longs Bitfinex (BTC)', drv.bfx_longs_btc!=null?Number(drv.bfx_longs_btc).toFixed(2)+' BTC':'N/A', 'pos'),
+    kv('Shorts Bitfinex (BTC)', drv.bfx_shorts_btc!=null?Number(drv.bfx_shorts_btc).toFixed(2)+' BTC':'N/A', 'neg'),
+    kv('Ratio L/S', drv.bfx_ls_ratio!=null?Number(drv.bfx_ls_ratio).toFixed(3):'N/A', drv.bfx_ls_ratio>1?'pos':'neg'),
+    kv('DVol Deribit', drv.deribit_dvol!=null?Number(drv.deribit_dvol).toFixed(1)+'%':'N/A', drv.deribit_dvol>80?'neg':drv.deribit_dvol>60?'orange':'pos'),
+    kv('Var DVol', drv.deribit_dvol_change!=null?(drv.deribit_dvol_change>0?'+':'')+Number(drv.deribit_dvol_change).toFixed(1)+'%':'N/A'),
+    kv('Signal Funding', drv.funding_signal||'N/A'),
+    kv('Source', 'Bitfinex Stats + Deribit DVol', 'blue'),
+  ].join('');
+}
+
+// ══════ DEFI ════════════════════════════════════════════════
+function renderDefi() {
+  const defi = DEFI; const d = DATA;
+  document.getElementById('defi-btc-tvl').textContent = defi.btc_chain_tvl_usd!=null?'$'+fmtV(defi.btc_chain_tvl_usd):'---';
+  document.getElementById('defi-wbtc').textContent = defi.wbtc_tvl_usd!=null?'$'+fmtV(defi.wbtc_tvl_usd):'---';
+  document.getElementById('defi-messari-price').textContent = defi.messari_price!=null?'$'+fmt(defi.messari_price,2):'---';
+  document.getElementById('defi-cc-close').textContent = defi.cc_close!=null?'$'+fmt(defi.cc_close,2):'---';
+  document.getElementById('defi-cc-high').textContent = defi.cc_high_30d!=null?'$'+fmt(defi.cc_high_30d,2):'---';
+
+  document.getElementById('defi-llama').innerHTML = [
+    kv('TVL Bitcoin Chain', defi.btc_chain_tvl_usd!=null?'$'+fmtV(defi.btc_chain_tvl_usd):'N/A', 'orange'),
+    kv('WBTC TVL (Ethereum)', defi.wbtc_tvl_usd!=null?'$'+fmtV(defi.wbtc_tvl_usd):'N/A', 'green'),
+    kv('tBTC TVL', defi.tbtc_tvl_usd!=null?'$'+fmtV(defi.tbtc_tvl_usd):'N/A'),
+    kv('Babylon TVL', defi.babylon_tvl_usd!=null?'$'+fmtV(defi.babylon_tvl_usd):'N/A'),
+    kv('Lombard (LBTC) TVL', defi.lombard_tvl_usd!=null?'$'+fmtV(defi.lombard_tvl_usd):'N/A'),
+    kv('Source', 'DefiLlama API', 'blue'),
+  ].join('');
+
+  document.getElementById('defi-messari').innerHTML = [
+    kv('Prix (CoinPaprika)', defi.messari_price!=null?'$'+fmt(defi.messari_price,2):'N/A'),
+    kv('Var 7j', defi.messari_chg_7d!=null?fmtP(defi.messari_chg_7d):'N/A'),
+    kv('Var 30j', defi.messari_chg_30d!=null?fmtP(defi.messari_chg_30d):'N/A'),
+    kv('Var 1an', defi.messari_chg_1y!=null?fmtP(defi.messari_chg_1y):'N/A'),
+    kv('ATH', defi.messari_ath_price!=null?'$'+fmt(defi.messari_ath_price,2):'N/A'),
+    kv('% depuis ATH', defi.messari_pct_from_ath!=null?fmtP(defi.messari_pct_from_ath):'N/A'),
+    kv('Supply minée', defi.messari_supply_mined!=null?fmt(defi.messari_supply_mined)+' BTC':'N/A'),
+    kv('% supply minée', defi.messari_supply_pct!=null?defi.messari_supply_pct.toFixed(2)+'%':'N/A'),
+    kv('Market Cap', defi.messari_market_cap!=null?'$'+fmtV(defi.messari_market_cap):'N/A'),
+    kv('Source', 'CoinPaprika Extended', 'blue'),
+  ].join('');
+
+  document.getElementById('defi-cc').innerHTML = [
+    kv('Close (OKX Daily)', defi.cc_close!=null?'$'+fmt(defi.cc_close,2):'N/A', 'orange'),
+    kv('High 30j', defi.cc_high_30d!=null?'$'+fmt(defi.cc_high_30d,2):'N/A'),
+    kv('Low 30j', defi.cc_low_30d!=null?'$'+fmt(defi.cc_low_30d,2):'N/A'),
+    kv('Volume 24h USD', defi.cc_vol_usd_24h!=null?'$'+fmtV(defi.cc_vol_usd_24h):'N/A'),
+    kv('Volume moyen 30j', defi.cc_avg_vol_30d!=null?'$'+fmtV(defi.cc_avg_vol_30d):'N/A'),
+    kv('Source', defi.cc_source||'OKX Klines', 'blue'),
+  ].join('');
+
+  document.getElementById('defi-wtm').innerHTML = [
+    kv('Profitabilité', d.wtm_btc_profitability!=null?Number(d.wtm_btc_profitability).toFixed(1)+'%':'N/A', d.wtm_btc_profitability>100?'pos':d.wtm_btc_profitability<80?'neg':''),
+    kv('Nethash (EH/s)', d.wtm_btc_nethash_th!=null?(Number(d.wtm_btc_nethash_th)/1e18).toFixed(2)+' EH/s':'N/A'),
+    kv('Difficulté', d.wtm_btc_difficulty!=null?fmtV(d.wtm_btc_difficulty):'N/A'),
+    kv('Bloc reward', d.wtm_btc_block_reward!=null?Number(d.wtm_btc_block_reward).toFixed(4)+' BTC':'N/A'),
+    kv('Temps/bloc', d.wtm_btc_block_time!=null?Number(d.wtm_btc_block_time).toFixed(1)+' sec':'N/A'),
+    kv('Source', 'WhatToMine.com API', 'blue'),
+  ].join('');
+
+  document.getElementById('defi-cm-deep').innerHTML = [
+    kv('Adresses actives', d.cm_active_addresses!=null?fmtV(d.cm_active_addresses):'N/A', 'green'),
+    kv('Prix CoinMetrics', d.cm_price_usd!=null?'$'+fmt(d.cm_price_usd,2):'N/A'),
+    kv('Hashrate (EH/s)', d.cm_hashrate_eh!=null?Number(d.cm_hashrate_eh).toFixed(2)+' EH/s':'N/A'),
+    kv('Date données', d.cm_deep_date||'N/A'),
+    kv('Source', 'CoinMetrics Community (tier gratuit)', 'blue'),
+  ].join('');
+
+  document.getElementById('defi-blocks').innerHTML = [
+    kv('Dernier bloc', d.last_block_height!=null?fmt(d.last_block_height):'N/A', 'orange'),
+    kv('TXs dans bloc', d.last_block_txcount!=null?fmt(d.last_block_txcount):'N/A'),
+    kv('Pool', d.last_block_pool||'N/A', 'blue'),
+    kv('Frais médian', d.last_block_median_fee_rate!=null?d.last_block_median_fee_rate+' sat/vB':'N/A'),
+    kv('Source', 'Mempool.space v1/blocks', 'blue'),
+  ].join('');
+
+  document.getElementById('defi-bchart-hashrate').innerHTML = '<div class="section-title" style="margin-top:0">Hashrate 30j (Blockchain.info)</div>'+[
+    kv('Hashrate actuel', d.bchart_hashrate_now_eh!=null?Number(d.bchart_hashrate_now_eh).toFixed(2)+' EH/s':'N/A', 'orange'),
+    kv('Moy 30j', d.bchart_hashrate_30d_avg_eh!=null?Number(d.bchart_hashrate_30d_avg_eh).toFixed(2)+' EH/s':'N/A'),
+    kv('Source', 'Blockchain.info Charts', 'blue'),
+  ].join('');
+
+  document.getElementById('defi-bchart-txcount').innerHTML = '<div class="section-title" style="margin-top:0">Transactions 30j (Blockchain.info)</div>'+[
+    kv('TXs aujourd\'hui', d.bchart_txcount_today!=null?fmt(d.bchart_txcount_today):'N/A', 'green'),
+    kv('Moy TXs/j (30j)', d.bchart_txcount_30d_avg!=null?fmt(d.bchart_txcount_30d_avg):'N/A'),
+    kv('Frais USD (7j)', d.bchart_fees_usd_today!=null?'$'+fmt(d.bchart_fees_usd_today,2):'N/A'),
+    kv('Source', 'Blockchain.info Charts', 'blue'),
+  ].join('');
+}
+
+// ══════ ALERTES ══════════════════════════════════════════════
+function renderAlertes() {
+  const signals = compute_signals_frontend(DATA);
+  const al = document.getElementById('al-signals');
+  if(!ALERTS || ALERTS.length === 0) {
+    al.innerHTML = '<div class="signal neutral"><div class="signal-title">✅ Aucune alerte active</div><div class="signal-desc">Tous les indicateurs dans les zones normales.</div></div>';
+  } else {
+    al.innerHTML = ALERTS.map(a => {
+      const cls = a.severity==='CRITIQUE'?'sell':a.severity==='OPPORTUNITÉ'?'buy':'neutral';
+      return `<div class="signal ${cls}"><div class="signal-title">${a.severity} — ${a.metric}</div><div class="signal-desc">${a.message}</div></div>`;
+    }).join('');
+  }
+
+  const techSignals = [
+    {title: 'MVRV', val: signals.mvrv_signal, desc: DATA.mvrv!=null?'MVRV = '+Number(DATA.mvrv).toFixed(3):'N/A'},
+    {title: 'NUPL', val: signals.nupl_zone, desc: DATA.nupl!=null?'NUPL = '+Number(DATA.nupl).toFixed(3):'N/A'},
+    {title: 'RSI 14j', val: signals.rsi_signal, desc: DATA.rsi_14!=null?'RSI = '+Number(DATA.rsi_14).toFixed(1):'N/A'},
+    {title: 'Sharpe 30j', val: signals.sharpe_signal, desc: DATA.sharpe_30d!=null?'Sharpe = '+Number(DATA.sharpe_30d).toFixed(3):'N/A'},
+    {title: 'Fear & Greed', val: signals.fg_signal, desc: DATA.fear_greed_value!=null?DATA.fear_greed_value+' — '+(DATA.fear_greed_classification||''):'N/A'},
+    {title: 'ATH Distance', val: signals.ath_signal, desc: DATA.ath_pct!=null?'Distance ATH = '+Number(DATA.ath_pct).toFixed(2)+'%':'N/A'},
+    {title: 'Réseau Fees', val: signals.fee_signal, desc: DATA.fee_high!=null?DATA.fee_high+' sat/vB (fastest)':'N/A'},
+    {title: 'Mempool', val: signals.mempool_signal, desc: DATA.pending_txs!=null?fmtV(DATA.pending_txs)+' TXs en attente':'N/A'},
+    {title: 'aSOPR', val: signals.asopr_signal, desc: DATA.asopr!=null?'aSOPR = '+Number(DATA.asopr).toFixed(4):'N/A'},
+  ].filter(s=>s.val);
+
+  document.getElementById('al-tech-signals').innerHTML = techSignals.map(s => {
+    const cls = s.val&&(s.val.includes('🔴')||s.val.includes('🟡'))?'neutral':'neutral';
+    return `<div class="signal ${cls}"><div class="signal-title">${s.title} — ${s.val}</div><div class="signal-desc">${s.desc}</div></div>`;
+  }).join('');
+}
+
+function compute_signals_frontend(d) {
+  const s = {};
+  if(d.mvrv) s.mvrv_signal = d.mvrv>=3.5?'Surachat 🔴':d.mvrv>=2.5?'Chaud 🟡':d.mvrv>=1?'Neutre 🟢':'Sous-évalué 💜';
+  if(d.nupl!=null) s.nupl_zone = d.nupl>=0.75?'Euphorie 🔴':d.nupl>=0.5?'Avidité 🟡':d.nupl>=0.25?'Optimisme 🟢':d.nupl>=0?'Espoir 🟢':'Capitulation 💜';
+  if(d.rsi_14!=null) s.rsi_signal = d.rsi_14>=80?'Surachat 🔴':d.rsi_14>=60?'Haussier 🟡':d.rsi_14>=40?'Neutre 🟢':d.rsi_14>=20?'Baissier 🟡':'Survente 💜';
+  if(d.sharpe_30d!=null) s.sharpe_signal = d.sharpe_30d>=2?'Excellent ✅':d.sharpe_30d>=1?'Bon 🟢':d.sharpe_30d>=0?'Positif 🟡':'Négatif 🔴';
+  if(d.fear_greed_value!=null) s.fg_signal = d.fear_greed_value<=20?'Peur extrême 💜':d.fear_greed_value<=40?'Peur 🟡':d.fear_greed_value<=60?'Neutre 🟢':d.fear_greed_value<=80?'Avidité 🟡':'Avidité extrême 🔴';
+  if(d.ath_pct!=null) s.ath_signal = Math.abs(d.ath_pct)<5?'Proche ATH 🔴':Math.abs(d.ath_pct)<20?'Zone haute 🟡':Math.abs(d.ath_pct)<50?'Zone médiane 🟢':'Zone basse 💜';
+  if(d.fee_high!=null) s.fee_signal = d.fee_high<=3?'Réseau libre ✅':d.fee_high<=15?'Normal':d.fee_high<=50?'Chargé ⚠️':'Congestionné 🔴';
+  if(d.pending_txs!=null) s.mempool_signal = d.pending_txs<5000?'Vide ✅':d.pending_txs<30000?'Normal':d.pending_txs<100000?'Chargé ⚠️':'Saturé 🔴';
+  if(d.asopr!=null) s.asopr_signal = d.asopr>=1.02?'Profit 🟢':d.asopr>=0.98?'Neutre 🟡':'Perte 🔴';
+  return s;
+}
+
+// ══════ SOURCES ══════════════════════════════════════════════
+let SOURCES_DATA = {};
+function renderSources(filter) {
+  const cats = SOURCES_DATA.categories || {};
+  let all = [];
+  for(const [catKey, cat] of Object.entries(cats)) {
+    for(const src of (cat.sources||[])) {
+      all.push({...src, category: catKey});
+    }
+  }
+  if(filter && filter !== 'all') {
+    all = all.filter(s => s.category === filter);
+  }
+  const container = document.getElementById('src-cards');
+  container.innerHTML = all.map(src => {
+    const flag = src.country ? `<span class="src-tag tag-country">${src.country}</span> ` : '';
+    const keyTag = src.key ? `<span class="src-tag tag-key">Clé requise</span>` : `<span class="src-tag tag-free">Gratuit</span>`;
+    return `<div class="src-card" data-cat="${src.category}">
+      <div class="src-name">${flag}${src.name} ${keyTag}</div>
+      <div class="src-url">${src.url||''}</div>
+      <div class="src-data">${src.data||''}</div>
+    </div>`;
+  }).join('');
+}
+
+function filterSrc(cat) {
+  renderSources(cat);
+}
+
+// ══════ ETF ══════════════════════════════════════════════════
+function renderEtf() {
+  const d = DATA;
+  document.getElementById('etf-aum').textContent = d.etf_total_aum_usd!=null?'$'+fmtV(d.etf_total_aum_usd):'---';
+  const flow = d.etf_daily_inflow_usd;
+  document.getElementById('etf-flow-day').textContent = flow!=null?'$'+fmtV(Math.abs(flow))+(flow>=0?' entrant':' sortant'):'---';
+  document.getElementById('etf-flow-day').className = 'val '+(flow>0?'pos':flow<0?'neg':'');
+  document.getElementById('etf-flow-cum').textContent = d.etf_cum_inflow_usd!=null?'$'+fmtV(Math.abs(d.etf_cum_inflow_usd)):'---';
+  document.getElementById('etf-btc-held').textContent = d.etf_total_btc_held!=null?fmt(d.etf_total_btc_held)+' BTC':'---';
+
+  document.getElementById('etf-soso').innerHTML = !d.etf_total_aum_usd ? '<p class="err">Clé SOSOVALUE_KEY non configurée ou données indisponibles</p>' : [
+    kv('AUM Total ETF USD', d.etf_total_aum_usd!=null?'$'+fmtV(d.etf_total_aum_usd):'N/A', 'orange'),
+    kv('Flux Net Jour', flow!=null?(flow>0?'+':'')+fmtV(flow):'N/A', flow>0?'pos':flow<0?'neg':''),
+    kv('Flux Cumulé', d.etf_cum_inflow_usd!=null?'$'+fmtV(d.etf_cum_inflow_usd):'N/A'),
+    kv('Volume Trading/j', d.etf_daily_vol_usd!=null?'$'+fmtV(d.etf_daily_vol_usd):'N/A'),
+    kv('BTC Total Détenus', d.etf_total_btc_held!=null?fmt(d.etf_total_btc_held)+' BTC':'N/A', 'orange'),
+    kv('Signal', d.etf_signal||'N/A'),
+    kv('Date', d.etf_date||'N/A'),
+    kv('Source', 'SoSoValue API (clé requise)', 'orange'),
+  ].join('');
+
+  const etfs = ['ibit','fbtc','arkb','gbtc','hodl'];
+  document.getElementById('etf-12d').innerHTML = !d['etf_ibit_price'] ? '<p class="err">Clé TWELVE_DATA_KEY non configurée ou données indisponibles</p>' :
+    etfs.map(t => d['etf_'+t+'_price'] ? [
+      `<div style="font-weight:700;color:var(--orange);margin:8px 0 4px;border-top:1px solid var(--border);padding-top:8px">${t.toUpperCase()} — ${d['etf_'+t+'_name']||t}</div>`,
+      kv('Prix', d['etf_'+t+'_price']!=null?'$'+Number(d['etf_'+t+'_price']).toFixed(2)+'':'N/A'),
+      kv('Variation', d['etf_'+t+'_change']!=null?fmtP(d['etf_'+t+'_change']):'N/A'),
+      kv('Volume', d['etf_'+t+'_vol']!=null?fmtV(d['etf_'+t+'_vol']):'N/A'),
+    ].join('') : '').filter(Boolean).join('')+kv('Source','TwelveData API (clé requise)','orange');
+}
+
+// ══════ LOAD DATA ════════════════════════════════════════════
+async function loadAll() {
+  document.getElementById('h-upd').textContent = 'Chargement...';
+  try {
+    const [summary, exchanges, intl, stooq, drv, defi, sources] = await Promise.allSettled([
+      fetch(API+'/api/summary').then(r=>r.json()),
+      fetch(API+'/api/exchanges').then(r=>r.json()),
+      fetch(API+'/api/international').then(r=>r.json()),
+      fetch(API+'/api/stooq').then(r=>r.json()),
+      fetch(API+'/api/derivatives').then(r=>r.json()),
+      fetch(API+'/api/defi').then(r=>r.json()),
+      fetch(API+'/api/sources').then(r=>r.json()),
+    ]);
+
+    if(summary.status==='fulfilled') DATA = summary.value;
+    if(exchanges.status==='fulfilled') EX = exchanges.value;
+    if(intl.status==='fulfilled') INTL = intl.value;
+    if(stooq.status==='fulfilled') STOOQ = stooq.value;
+    if(drv.status==='fulfilled') DRV = drv.value;
+    if(defi.status==='fulfilled') DEFI = defi.value;
+    if(sources.status==='fulfilled') { SOURCES_DATA = sources.value; renderSources('all'); }
+
+    // Fetch alerts separately
+    try {
+      const al = await fetch(API+'/api/alerts').then(r=>r.json());
+      ALERTS = Array.isArray(al) ? al : [];
+    } catch(e) { ALERTS = []; }
+
+    // Update header
+    const price = DATA.price_usd || EX.avg_price;
+    if(price) {
+      document.getElementById('h-price').textContent = '$'+fmt(price,2);
+      document.getElementById('h-price').style.color = 'var(--orange)';
+    }
+    const chg = DATA.change_24h || DATA.price_change_1d;
+    if(chg!=null) {
+      const el = document.getElementById('h-change');
+      el.textContent = (chg>0?'+':'')+Number(chg).toFixed(2)+'%';
+      el.className = 'price-change '+(chg>=0?'pos':'neg');
+    }
+    const vol = DATA.volume_24h_usd || DATA.volume_usd;
+    if(vol) document.getElementById('h-vol').textContent = 'Vol: $'+fmtV(vol);
+    document.getElementById('h-upd').textContent = 'Màj: '+new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+
+    // Render all tabs
+    renderDash(); renderMarche(); renderOnchain(); renderTech();
+    renderReseau(); renderLightning(); renderExchanges(); renderIntl();
+    renderEtf(); renderDerivatives(); renderDefi(); renderAlertes();
+
+    // Hide loader
+    document.getElementById('loader').style.display = 'none';
+
+  } catch(e) {
+    console.error('loadAll error:', e);
+    document.getElementById('h-upd').textContent = 'Erreur: '+e.message;
+    document.getElementById('loader').style.display = 'none';
+  }
+}
+
+// ══════ INIT ════════════════════════════════════════════════
+loadAll();
+setInterval(loadAll, 5 * 60 * 1000); // refresh every 5 min
+</script>
+</body>
+</html>
