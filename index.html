@@ -1016,5 +1016,343 @@ function renderIntl() {
 
   // Mexico
   document.getElementById('intl-mx').innerHTML = [
-    mkExCard('Bitso', '🇲🇽', i.bitso_price_mxn, 'MXN', i.bitso_price_usd, i.bitso_vol, i.bitso_ask_<response clipped><NOTE>To save on context only part of this file has been shown to you. You should retry this tool after you have searched inside the file with `grep -n` in order to find the line numbers of what you are looking for.</NOTE>
+    mkExCard('Bitso', '🇲🇽', i.bitso_price_mxn, 'MXN', i.bitso_price_usd, i.bitso_vol, i.bitso_ask_mxn, i.bitso_bid_mxn),
+  ].join('');
 
+  // India
+  document.getElementById('intl-in').innerHTML = [
+    mkExCard('CoinDCX', '🇮🇳', i.coindcx_price_inr, 'INR', i.coindcx_price_usd, i.coindcx_vol, null, null, null, 'coindcx.com'),
+    mkExCard('WazirX', '🇮🇳', i.wazirx_price_inr, 'INR', i.wazirx_price_usd, i.wazirx_vol),
+  ].join('');
+
+  // Indonesia
+  document.getElementById('intl-id').innerHTML = [
+    mkExCard('Indodax', '🇮🇩', i.indodax_price_idr, 'IDR', i.indodax_price_usd, i.indodax_vol_btc),
+  ].join('');
+}
+
+// mkExCard helper — card for international exchange
+function mkExCard(name, flag, priceLocal, cur, priceUsd, vol, ask, bid, vwap, note) {
+  return `<div class="card"><div class="kv"><span class="k">${flag} ${name}</span><span class="v orange">${priceLocal!=null?fmt(priceLocal)+' '+cur:'<span class="err">N/A</span>'}</span></div>${priceUsd!=null?`<div class="kv"><span class="k">≈ USD</span><span class="v">$${fmt(priceUsd,2)}</span></div>`:''}${ask!=null?`<div class="kv"><span class="k">Ask</span><span class="v">${fmt(ask)+' '+cur}</span></div>`:''}${bid!=null?`<div class="kv"><span class="k">Bid</span><span class="v">${fmt(bid)+' '+cur}</span></div>`:''}${vol!=null?`<div class="kv"><span class="k">Volume</span><span class="v">${fmtV(vol)}</span></div>`:''}${vwap!=null?`<div class="kv"><span class="k">VWAP</span><span class="v">${fmt(vwap)+' '+cur}</span></div>`:''}${note?`<div class="kv"><span class="k">Source</span><span class="v blue" style="font-size:10px">${note}</span></div>`:''}</div>`;
+}
+
+// ══════ DERIVATIFS ══════════════════════════════════════════
+function renderDerivatives() {
+  const d = DATA; const drv = DRV;
+  document.getElementById('drv-funding').innerHTML = drv.avg_funding_rate_pct!=null?(drv.avg_funding_rate_pct>0?'+':'')+Number(drv.avg_funding_rate_pct).toFixed(4)+'%':'---';
+  document.getElementById('drv-funding').style.color = drv.avg_funding_rate_pct>0.05?'var(--red)':drv.avg_funding_rate_pct<-0.01?'var(--green)':'var(--text)';
+  document.getElementById('drv-ls').textContent = drv.bnf_ls_ratio!=null?Number(drv.bnf_ls_ratio).toFixed(3):'---';
+  document.getElementById('drv-oi').textContent = drv.bnf_oi_btc!=null?fmtV(drv.bnf_oi_btc)+' BTC':'---';
+  document.getElementById('drv-dvol').textContent = drv.deribit_dvol!=null?Number(drv.deribit_dvol).toFixed(1)+'%':'---';
+
+  document.getElementById('drv-binance').innerHTML = [
+    kv('Mark Price', drv.bnf_mark_price!=null?'$'+fmt(drv.bnf_mark_price,2):'N/A'),
+    kv('Index Price', drv.bnf_index_price!=null?'$'+fmt(drv.bnf_index_price,2):'N/A'),
+    kv('Funding Rate', drv.bnf_funding_rate!=null?(drv.bnf_funding_rate>0?'+':'')+Number(drv.bnf_funding_rate).toFixed(4)+'%':'N/A', drv.bnf_funding_rate>0.05?'neg':drv.bnf_funding_rate<-0.01?'pos':''),
+    kv('Open Interest', drv.bnf_oi_btc!=null?fmtV(drv.bnf_oi_btc)+' BTC':'N/A'),
+    kv('Volume 24h USD', drv.bnf_vol_usd!=null?'$'+fmtV(drv.bnf_vol_usd):'N/A'),
+    kv('Long/Short Ratio', drv.bnf_ls_ratio!=null?Number(drv.bnf_ls_ratio).toFixed(3):'N/A', drv.bnf_ls_ratio>1.1?'neg':drv.bnf_ls_ratio<0.9?'pos':''),
+    kv('Longs %', drv.bnf_long_pct!=null?Number(drv.bnf_long_pct).toFixed(1)+'%':'N/A'),
+    kv('Shorts %', drv.bnf_short_pct!=null?Number(drv.bnf_short_pct).toFixed(1)+'%':'N/A'),
+    kv('Variation 24h', drv.bnf_change_24h!=null?fmtP(drv.bnf_change_24h):'N/A'),
+    kv('Source', 'Binance FAPI', 'blue'),
+  ].join('');
+
+  document.getElementById('drv-kraken').innerHTML = [
+    kv('Symbole', drv.krf_symbol||'PF_XBTUSD'),
+    kv('Last Price', drv.krf_last_price!=null?'$'+fmt(drv.krf_last_price,2):'N/A'),
+    kv('Mark Price', drv.krf_mark_price!=null?'$'+fmt(drv.krf_mark_price,2):'N/A'),
+    kv('Funding Rate', drv.krf_funding_rate!=null?(drv.krf_funding_rate>0?'+':'')+Number(drv.krf_funding_rate).toFixed(4)+'%':'N/A'),
+    kv('Open Interest', drv.krf_oi_contracts!=null?fmtV(drv.krf_oi_contracts)+' contracts':'N/A'),
+    kv('Volume 24h', drv.krf_vol_24h!=null?fmtV(drv.krf_vol_24h):'N/A'),
+    kv('Source', 'Kraken Futures API', 'blue'),
+  ].join('');
+
+  document.getElementById('drv-bitmex').innerHTML = [
+    kv('Last Price', drv.bitmex_last_price!=null?'$'+fmt(drv.bitmex_last_price,2):'N/A'),
+    kv('Mark Price', drv.bitmex_mark_price!=null?'$'+fmt(drv.bitmex_mark_price,2):'N/A'),
+    kv('Funding Rate', drv.bitmex_funding_rate!=null?(drv.bitmex_funding_rate>0?'+':'')+Number(drv.bitmex_funding_rate).toFixed(4)+'%':'N/A'),
+    kv('Open Interest', drv.bitmex_oi_contracts!=null?fmtV(drv.bitmex_oi_contracts)+' contracts':'N/A'),
+    kv('Volume 24h BTC', drv.bitmex_vol_24h_btc!=null?Number(drv.bitmex_vol_24h_btc).toFixed(2)+' BTC':'N/A'),
+    kv('Source', 'BitMEX REST API', 'blue'),
+  ].join('');
+
+  document.getElementById('drv-hyper').innerHTML = [
+    kv('Mark Price', drv.hyper_mark_price!=null?'$'+fmt(drv.hyper_mark_price,2):'N/A'),
+    kv('Mid Price', drv.hyper_mid_price!=null?'$'+fmt(drv.hyper_mid_price,2):'N/A'),
+    kv('Funding Rate', drv.hyper_funding_rate!=null?(drv.hyper_funding_rate>0?'+':'')+Number(drv.hyper_funding_rate).toFixed(4)+'%':'N/A'),
+    kv('Open Interest USD', drv.hyper_oi_usd!=null?'$'+fmtV(drv.hyper_oi_usd):'N/A'),
+    kv('Volume 24h USD', drv.hyper_vol_24h_usd!=null?'$'+fmtV(drv.hyper_vol_24h_usd):'N/A'),
+    kv('Type', 'DEX Perpétuel (L1)'),
+    kv('Source', 'Hyperliquid.xyz API', 'blue'),
+  ].join('');
+
+  document.getElementById('drv-bitget').innerHTML = [
+    kv('Last Price', drv.bgf_last_price!=null?'$'+fmt(drv.bgf_last_price,2):'N/A'),
+    kv('Mark Price', drv.bgf_mark_price!=null?'$'+fmt(drv.bgf_mark_price,2):'N/A'),
+    kv('Index Price', drv.bgf_index_price!=null?'$'+fmt(drv.bgf_index_price,2):'N/A'),
+    kv('Funding Rate', drv.bgf_funding_rate!=null?(drv.bgf_funding_rate>0?'+':'')+Number(drv.bgf_funding_rate).toFixed(4)+'%':'N/A'),
+    kv('Open Interest USD', drv.bgf_oi_usd!=null?'$'+fmtV(drv.bgf_oi_usd):'N/A'),
+    kv('Source', 'Bitget USDT-Futures API', 'blue'),
+  ].join('');
+
+  document.getElementById('drv-bfxstats').innerHTML = [
+    kv('Longs Bitfinex (BTC)', drv.bfx_longs_btc!=null?Number(drv.bfx_longs_btc).toFixed(2)+' BTC':'N/A', 'pos'),
+    kv('Shorts Bitfinex (BTC)', drv.bfx_shorts_btc!=null?Number(drv.bfx_shorts_btc).toFixed(2)+' BTC':'N/A', 'neg'),
+    kv('Ratio L/S', drv.bfx_ls_ratio!=null?Number(drv.bfx_ls_ratio).toFixed(3):'N/A', drv.bfx_ls_ratio>1?'pos':'neg'),
+    kv('DVol Deribit', drv.deribit_dvol!=null?Number(drv.deribit_dvol).toFixed(1)+'%':'N/A', drv.deribit_dvol>80?'neg':drv.deribit_dvol>60?'orange':'pos'),
+    kv('Var DVol', drv.deribit_dvol_change!=null?(drv.deribit_dvol_change>0?'+':'')+Number(drv.deribit_dvol_change).toFixed(1)+'%':'N/A'),
+    kv('Signal Funding', drv.funding_signal||'N/A'),
+    kv('Source', 'Bitfinex Stats + Deribit DVol', 'blue'),
+  ].join('');
+}
+
+// ══════ DEFI ════════════════════════════════════════════════
+function renderDefi() {
+  const defi = DEFI; const d = DATA;
+  document.getElementById('defi-btc-tvl').textContent = defi.btc_chain_tvl_usd!=null?'$'+fmtV(defi.btc_chain_tvl_usd):'---';
+  document.getElementById('defi-wbtc').textContent = defi.wbtc_tvl_usd!=null?'$'+fmtV(defi.wbtc_tvl_usd):'---';
+  document.getElementById('defi-messari-price').textContent = defi.messari_price!=null?'$'+fmt(defi.messari_price,2):'---';
+  document.getElementById('defi-cc-close').textContent = defi.cc_close!=null?'$'+fmt(defi.cc_close,2):'---';
+  document.getElementById('defi-cc-high').textContent = defi.cc_high_30d!=null?'$'+fmt(defi.cc_high_30d,2):'---';
+
+  document.getElementById('defi-llama').innerHTML = [
+    kv('TVL Bitcoin Chain', defi.btc_chain_tvl_usd!=null?'$'+fmtV(defi.btc_chain_tvl_usd):'N/A', 'orange'),
+    kv('WBTC TVL (Ethereum)', defi.wbtc_tvl_usd!=null?'$'+fmtV(defi.wbtc_tvl_usd):'N/A', 'green'),
+    kv('tBTC TVL', defi.tbtc_tvl_usd!=null?'$'+fmtV(defi.tbtc_tvl_usd):'N/A'),
+    kv('Babylon TVL', defi.babylon_tvl_usd!=null?'$'+fmtV(defi.babylon_tvl_usd):'N/A'),
+    kv('Lombard (LBTC) TVL', defi.lombard_tvl_usd!=null?'$'+fmtV(defi.lombard_tvl_usd):'N/A'),
+    kv('Source', 'DefiLlama API', 'blue'),
+  ].join('');
+
+  document.getElementById('defi-messari').innerHTML = [
+    kv('Prix (CoinPaprika)', defi.messari_price!=null?'$'+fmt(defi.messari_price,2):'N/A'),
+    kv('Var 7j', defi.messari_chg_7d!=null?fmtP(defi.messari_chg_7d):'N/A'),
+    kv('Var 30j', defi.messari_chg_30d!=null?fmtP(defi.messari_chg_30d):'N/A'),
+    kv('Var 1an', defi.messari_chg_1y!=null?fmtP(defi.messari_chg_1y):'N/A'),
+    kv('ATH', defi.messari_ath_price!=null?'$'+fmt(defi.messari_ath_price,2):'N/A'),
+    kv('% depuis ATH', defi.messari_pct_from_ath!=null?fmtP(defi.messari_pct_from_ath):'N/A'),
+    kv('Supply minée', defi.messari_supply_mined!=null?fmt(defi.messari_supply_mined)+' BTC':'N/A'),
+    kv('% supply minée', defi.messari_supply_pct!=null?defi.messari_supply_pct.toFixed(2)+'%':'N/A'),
+    kv('Market Cap', defi.messari_market_cap!=null?'$'+fmtV(defi.messari_market_cap):'N/A'),
+    kv('Source', 'CoinPaprika Extended', 'blue'),
+  ].join('');
+
+  document.getElementById('defi-cc').innerHTML = [
+    kv('Close (OKX Daily)', defi.cc_close!=null?'$'+fmt(defi.cc_close,2):'N/A', 'orange'),
+    kv('High 30j', defi.cc_high_30d!=null?'$'+fmt(defi.cc_high_30d,2):'N/A'),
+    kv('Low 30j', defi.cc_low_30d!=null?'$'+fmt(defi.cc_low_30d,2):'N/A'),
+    kv('Volume 24h USD', defi.cc_vol_usd_24h!=null?'$'+fmtV(defi.cc_vol_usd_24h):'N/A'),
+    kv('Volume moyen 30j', defi.cc_avg_vol_30d!=null?'$'+fmtV(defi.cc_avg_vol_30d):'N/A'),
+    kv('Source', defi.cc_source||'OKX Klines', 'blue'),
+  ].join('');
+
+  document.getElementById('defi-wtm').innerHTML = [
+    kv('Profitabilité', d.wtm_btc_profitability!=null?Number(d.wtm_btc_profitability).toFixed(1)+'%':'N/A', d.wtm_btc_profitability>100?'pos':d.wtm_btc_profitability<80?'neg':''),
+    kv('Nethash (EH/s)', d.wtm_btc_nethash_th!=null?(Number(d.wtm_btc_nethash_th)/1e18).toFixed(2)+' EH/s':'N/A'),
+    kv('Difficulté', d.wtm_btc_difficulty!=null?fmtV(d.wtm_btc_difficulty):'N/A'),
+    kv('Bloc reward', d.wtm_btc_block_reward!=null?Number(d.wtm_btc_block_reward).toFixed(4)+' BTC':'N/A'),
+    kv('Temps/bloc', d.wtm_btc_block_time!=null?Number(d.wtm_btc_block_time).toFixed(1)+' sec':'N/A'),
+    kv('Source', 'WhatToMine.com API', 'blue'),
+  ].join('');
+
+  document.getElementById('defi-cm-deep').innerHTML = [
+    kv('Adresses actives', d.cm_active_addresses!=null?fmtV(d.cm_active_addresses):'N/A', 'green'),
+    kv('Prix CoinMetrics', d.cm_price_usd!=null?'$'+fmt(d.cm_price_usd,2):'N/A'),
+    kv('Hashrate (EH/s)', d.cm_hashrate_eh!=null?Number(d.cm_hashrate_eh).toFixed(2)+' EH/s':'N/A'),
+    kv('Date données', d.cm_deep_date||'N/A'),
+    kv('Source', 'CoinMetrics Community (tier gratuit)', 'blue'),
+  ].join('');
+
+  document.getElementById('defi-blocks').innerHTML = [
+    kv('Dernier bloc', d.last_block_height!=null?fmt(d.last_block_height):'N/A', 'orange'),
+    kv('TXs dans bloc', d.last_block_txcount!=null?fmt(d.last_block_txcount):'N/A'),
+    kv('Pool', d.last_block_pool||'N/A', 'blue'),
+    kv('Frais médian', d.last_block_median_fee_rate!=null?d.last_block_median_fee_rate+' sat/vB':'N/A'),
+    kv('Source', 'Mempool.space v1/blocks', 'blue'),
+  ].join('');
+
+  document.getElementById('defi-bchart-hashrate').innerHTML = '<div class="section-title" style="margin-top:0">Hashrate 30j (Blockchain.info)</div>'+[
+    kv('Hashrate actuel', d.bchart_hashrate_now_eh!=null?Number(d.bchart_hashrate_now_eh).toFixed(2)+' EH/s':'N/A', 'orange'),
+    kv('Moy 30j', d.bchart_hashrate_30d_avg_eh!=null?Number(d.bchart_hashrate_30d_avg_eh).toFixed(2)+' EH/s':'N/A'),
+    kv('Source', 'Blockchain.info Charts', 'blue'),
+  ].join('');
+
+  document.getElementById('defi-bchart-txcount').innerHTML = '<div class="section-title" style="margin-top:0">Transactions 30j (Blockchain.info)</div>'+[
+    kv('TXs aujourd\'hui', d.bchart_txcount_today!=null?fmt(d.bchart_txcount_today):'N/A', 'green'),
+    kv('Moy TXs/j (30j)', d.bchart_txcount_30d_avg!=null?fmt(d.bchart_txcount_30d_avg):'N/A'),
+    kv('Frais USD (7j)', d.bchart_fees_usd_today!=null?'$'+fmt(d.bchart_fees_usd_today,2):'N/A'),
+    kv('Source', 'Blockchain.info Charts', 'blue'),
+  ].join('');
+}
+
+// ══════ ALERTES ══════════════════════════════════════════════
+function renderAlertes() {
+  const signals = compute_signals_frontend(DATA);
+  const al = document.getElementById('al-signals');
+  if(!ALERTS || ALERTS.length === 0) {
+    al.innerHTML = '<div class="signal neutral"><div class="signal-title">✅ Aucune alerte active</div><div class="signal-desc">Tous les indicateurs dans les zones normales.</div></div>';
+  } else {
+    al.innerHTML = ALERTS.map(a => {
+      const cls = a.severity==='CRITIQUE'?'sell':a.severity==='OPPORTUNITÉ'?'buy':'neutral';
+      return `<div class="signal ${cls}"><div class="signal-title">${a.severity} — ${a.metric}</div><div class="signal-desc">${a.message}</div></div>`;
+    }).join('');
+  }
+
+  const techSignals = [
+    {title: 'MVRV', val: signals.mvrv_signal, desc: DATA.mvrv!=null?'MVRV = '+Number(DATA.mvrv).toFixed(3):'N/A'},
+    {title: 'NUPL', val: signals.nupl_zone, desc: DATA.nupl!=null?'NUPL = '+Number(DATA.nupl).toFixed(3):'N/A'},
+    {title: 'RSI 14j', val: signals.rsi_signal, desc: DATA.rsi_14!=null?'RSI = '+Number(DATA.rsi_14).toFixed(1):'N/A'},
+    {title: 'Sharpe 30j', val: signals.sharpe_signal, desc: DATA.sharpe_30d!=null?'Sharpe = '+Number(DATA.sharpe_30d).toFixed(3):'N/A'},
+    {title: 'Fear & Greed', val: signals.fg_signal, desc: DATA.fear_greed_value!=null?DATA.fear_greed_value+' — '+(DATA.fear_greed_classification||''):'N/A'},
+    {title: 'ATH Distance', val: signals.ath_signal, desc: DATA.ath_pct!=null?'Distance ATH = '+Number(DATA.ath_pct).toFixed(2)+'%':'N/A'},
+    {title: 'Réseau Fees', val: signals.fee_signal, desc: DATA.fee_high!=null?DATA.fee_high+' sat/vB (fastest)':'N/A'},
+    {title: 'Mempool', val: signals.mempool_signal, desc: DATA.pending_txs!=null?fmtV(DATA.pending_txs)+' TXs en attente':'N/A'},
+    {title: 'aSOPR', val: signals.asopr_signal, desc: DATA.asopr!=null?'aSOPR = '+Number(DATA.asopr).toFixed(4):'N/A'},
+  ].filter(s=>s.val);
+
+  document.getElementById('al-tech-signals').innerHTML = techSignals.map(s => {
+    const cls = s.val&&(s.val.includes('🔴')||s.val.includes('🟡'))?'neutral':'neutral';
+    return `<div class="signal ${cls}"><div class="signal-title">${s.title} — ${s.val}</div><div class="signal-desc">${s.desc}</div></div>`;
+  }).join('');
+}
+
+function compute_signals_frontend(d) {
+  const s = {};
+  if(d.mvrv) s.mvrv_signal = d.mvrv>=3.5?'Surachat 🔴':d.mvrv>=2.5?'Chaud 🟡':d.mvrv>=1?'Neutre 🟢':'Sous-évalué 💜';
+  if(d.nupl!=null) s.nupl_zone = d.nupl>=0.75?'Euphorie 🔴':d.nupl>=0.5?'Avidité 🟡':d.nupl>=0.25?'Optimisme 🟢':d.nupl>=0?'Espoir 🟢':'Capitulation 💜';
+  if(d.rsi_14!=null) s.rsi_signal = d.rsi_14>=80?'Surachat 🔴':d.rsi_14>=60?'Haussier 🟡':d.rsi_14>=40?'Neutre 🟢':d.rsi_14>=20?'Baissier 🟡':'Survente 💜';
+  if(d.sharpe_30d!=null) s.sharpe_signal = d.sharpe_30d>=2?'Excellent ✅':d.sharpe_30d>=1?'Bon 🟢':d.sharpe_30d>=0?'Positif 🟡':'Négatif 🔴';
+  if(d.fear_greed_value!=null) s.fg_signal = d.fear_greed_value<=20?'Peur extrême 💜':d.fear_greed_value<=40?'Peur 🟡':d.fear_greed_value<=60?'Neutre 🟢':d.fear_greed_value<=80?'Avidité 🟡':'Avidité extrême 🔴';
+  if(d.ath_pct!=null) s.ath_signal = Math.abs(d.ath_pct)<5?'Proche ATH 🔴':Math.abs(d.ath_pct)<20?'Zone haute 🟡':Math.abs(d.ath_pct)<50?'Zone médiane 🟢':'Zone basse 💜';
+  if(d.fee_high!=null) s.fee_signal = d.fee_high<=3?'Réseau libre ✅':d.fee_high<=15?'Normal':d.fee_high<=50?'Chargé ⚠️':'Congestionné 🔴';
+  if(d.pending_txs!=null) s.mempool_signal = d.pending_txs<5000?'Vide ✅':d.pending_txs<30000?'Normal':d.pending_txs<100000?'Chargé ⚠️':'Saturé 🔴';
+  if(d.asopr!=null) s.asopr_signal = d.asopr>=1.02?'Profit 🟢':d.asopr>=0.98?'Neutre 🟡':'Perte 🔴';
+  return s;
+}
+
+// ══════ SOURCES ══════════════════════════════════════════════
+let SOURCES_DATA = {};
+function renderSources(filter) {
+  const cats = SOURCES_DATA.categories || {};
+  let all = [];
+  for(const [catKey, cat] of Object.entries(cats)) {
+    for(const src of (cat.sources||[])) {
+      all.push({...src, category: catKey});
+    }
+  }
+  if(filter && filter !== 'all') {
+    all = all.filter(s => s.category === filter);
+  }
+  const container = document.getElementById('src-cards');
+  container.innerHTML = all.map(src => {
+    const flag = src.country ? `<span class="src-tag tag-country">${src.country}</span> ` : '';
+    const keyTag = src.key ? `<span class="src-tag tag-key">Clé requise</span>` : `<span class="src-tag tag-free">Gratuit</span>`;
+    return `<div class="src-card" data-cat="${src.category}">
+      <div class="src-name">${flag}${src.name} ${keyTag}</div>
+      <div class="src-url">${src.url||''}</div>
+      <div class="src-data">${src.data||''}</div>
+    </div>`;
+  }).join('');
+}
+
+function filterSrc(cat) {
+  renderSources(cat);
+}
+
+// ══════ ETF ══════════════════════════════════════════════════
+function renderEtf() {
+  const d = DATA;
+  document.getElementById('etf-aum').textContent = d.etf_total_aum_usd!=null?'$'+fmtV(d.etf_total_aum_usd):'---';
+  const flow = d.etf_daily_inflow_usd;
+  document.getElementById('etf-flow-day').textContent = flow!=null?'$'+fmtV(Math.abs(flow))+(flow>=0?' entrant':' sortant'):'---';
+  document.getElementById('etf-flow-day').className = 'val '+(flow>0?'pos':flow<0?'neg':'');
+  document.getElementById('etf-flow-cum').textContent = d.etf_cum_inflow_usd!=null?'$'+fmtV(Math.abs(d.etf_cum_inflow_usd)):'---';
+  document.getElementById('etf-btc-held').textContent = d.etf_total_btc_held!=null?fmt(d.etf_total_btc_held)+' BTC':'---';
+
+  document.getElementById('etf-soso').innerHTML = !d.etf_total_aum_usd ? '<p class="err">Clé SOSOVALUE_KEY non configurée ou données indisponibles</p>' : [
+    kv('AUM Total ETF USD', d.etf_total_aum_usd!=null?'$'+fmtV(d.etf_total_aum_usd):'N/A', 'orange'),
+    kv('Flux Net Jour', flow!=null?(flow>0?'+':'')+fmtV(flow):'N/A', flow>0?'pos':flow<0?'neg':''),
+    kv('Flux Cumulé', d.etf_cum_inflow_usd!=null?'$'+fmtV(d.etf_cum_inflow_usd):'N/A'),
+    kv('Volume Trading/j', d.etf_daily_vol_usd!=null?'$'+fmtV(d.etf_daily_vol_usd):'N/A'),
+    kv('BTC Total Détenus', d.etf_total_btc_held!=null?fmt(d.etf_total_btc_held)+' BTC':'N/A', 'orange'),
+    kv('Signal', d.etf_signal||'N/A'),
+    kv('Date', d.etf_date||'N/A'),
+    kv('Source', 'SoSoValue API (clé requise)', 'orange'),
+  ].join('');
+
+  const etfs = ['ibit','fbtc','arkb','gbtc','hodl'];
+  document.getElementById('etf-12d').innerHTML = !d['etf_ibit_price'] ? '<p class="err">Clé TWELVE_DATA_KEY non configurée ou données indisponibles</p>' :
+    etfs.map(t => d['etf_'+t+'_price'] ? [
+      `<div style="font-weight:700;color:var(--orange);margin:8px 0 4px;border-top:1px solid var(--border);padding-top:8px">${t.toUpperCase()} — ${d['etf_'+t+'_name']||t}</div>`,
+      kv('Prix', d['etf_'+t+'_price']!=null?'$'+Number(d['etf_'+t+'_price']).toFixed(2)+'':'N/A'),
+      kv('Variation', d['etf_'+t+'_change']!=null?fmtP(d['etf_'+t+'_change']):'N/A'),
+      kv('Volume', d['etf_'+t+'_vol']!=null?fmtV(d['etf_'+t+'_vol']):'N/A'),
+    ].join('') : '').filter(Boolean).join('')+kv('Source','TwelveData API (clé requise)','orange');
+}
+
+// ══════ LOAD DATA ════════════════════════════════════════════
+async function loadAll() {
+  document.getElementById('h-upd').textContent = 'Chargement...';
+  try {
+    const [summary, exchanges, intl, stooq, drv, defi, sources] = await Promise.allSettled([
+      fetch(API+'/api/summary').then(r=>r.json()),
+      fetch(API+'/api/exchanges').then(r=>r.json()),
+      fetch(API+'/api/international').then(r=>r.json()),
+      fetch(API+'/api/stooq').then(r=>r.json()),
+      fetch(API+'/api/derivatives').then(r=>r.json()),
+      fetch(API+'/api/defi').then(r=>r.json()),
+      fetch(API+'/api/sources').then(r=>r.json()),
+    ]);
+
+    if(summary.status==='fulfilled') DATA = summary.value;
+    if(exchanges.status==='fulfilled') EX = exchanges.value;
+    if(intl.status==='fulfilled') INTL = intl.value;
+    if(stooq.status==='fulfilled') STOOQ = stooq.value;
+    if(drv.status==='fulfilled') DRV = drv.value;
+    if(defi.status==='fulfilled') DEFI = defi.value;
+    if(sources.status==='fulfilled') { SOURCES_DATA = sources.value; renderSources('all'); }
+
+    // Fetch alerts separately
+    try {
+      const al = await fetch(API+'/api/alerts').then(r=>r.json());
+      ALERTS = Array.isArray(al) ? al : [];
+    } catch(e) { ALERTS = []; }
+
+    // Update header
+    const price = DATA.price_usd || EX.avg_price;
+    if(price) {
+      document.getElementById('h-price').textContent = '$'+fmt(price,2);
+      document.getElementById('h-price').style.color = 'var(--orange)';
+    }
+    const chg = DATA.change_24h || DATA.price_change_1d;
+    if(chg!=null) {
+      const el = document.getElementById('h-change');
+      el.textContent = (chg>0?'+':'')+Number(chg).toFixed(2)+'%';
+      el.className = 'price-change '+(chg>=0?'pos':'neg');
+    }
+    const vol = DATA.volume_24h_usd || DATA.volume_usd;
+    if(vol) document.getElementById('h-vol').textContent = 'Vol: $'+fmtV(vol);
+    document.getElementById('h-upd').textContent = 'Màj: '+new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+
+    // Render all tabs
+    renderDash(); renderMarche(); renderOnchain(); renderTech();
+    renderReseau(); renderLightning(); renderExchanges(); renderIntl();
+    renderEtf(); renderDerivatives(); renderDefi(); renderAlertes();
+
+    // Hide loader
+    document.getElementById('loader').style.display = 'none';
+
+  } catch(e) {
+    console.error('loadAll error:', e);
+    document.getElementById('h-upd').textContent = 'Erreur: '+e.message;
+    document.getElementById('loader').style.display = 'none';
+  }
+}
+
+// ══════ INIT ════════════════════════════════════════════════
+loadAll();
+setInterval(loadAll, 5 * 60 * 1000); // refresh every 5 min
+</script>
+</body>
+</html>
