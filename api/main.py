@@ -1,11 +1,11 @@
 """
 BTC On-Chain Analytics API — v9.0.0 (Vercel Edition)
 Toutes les APIs BTC gratuites disponibles dans le monde — 70 sources.
- 
+
 Structure Vercel : ce fichier est servi comme serverless function.
 GET /         → index.html
 GET /api/*    → endpoints FastAPI
- 
+
 APIs intégrées (sans clé) :
   EXCHANGES USD : CoinGecko, Binance, Coinbase, Kraken, Bitfinex, Bitstamp,
                   OKX, Bybit, Gemini, KuCoin, Gate.io, HTX, MEXC, Bitget,
@@ -21,7 +21,7 @@ APIs intégrées (sans clé) :
   LIGHTNING     : Mempool.space + 1ML.com
   MINING        : Blockchain.info pools
   ETF (clés)    : SoSoValue, TwelveData
- 
+
 APIs supplémentaires v8 (+14 sources) :
   EXCHANGES USD+ : Poloniex, Crypto.com, BitMart, BTSE, CoinLore, CoinRanking, XT.com
   EXCHANGES INTL+: Foxbit(BR), NovaDax(BR), Luno(ZA), VALR(ZA),
@@ -33,31 +33,31 @@ APIs supplémentaires v8 (+14 sources) :
   MINING+ (v9)   : WhatToMine (profitabilité mining BTC)
   STATS (v9)     : Bitfinex Stats (positions long/short)
 """
- 
+
 import os, time, math, requests, logging
 from datetime import datetime, timezone
 from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
- 
+
 # ── load .env if present (dev local) ───────────────────────────
 try:
     from dotenv import load_dotenv
     load_dotenv()
 except ImportError:
     pass
- 
+
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
- 
+
 app = FastAPI(title="BTC Analytics — 70 APIs Gratuites", version="9.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
- 
+
 BGR_BASE    = "https://bitcoin-data.com"
 SOSO_BASE   = "https://api.sosovalue.xyz"
 TWELVE_BASE = "https://api.twelvedata.com"
- 
+
 # ── Caches globaux ─────────────────────────────────────────────
 _bgr_cache         = {"data": {}, "ts": 0}
 _bgr_holders_cache = {"data": {}, "ts": 0}
@@ -105,14 +105,14 @@ _cc_cache          = {"data": {}, "ts": 0}   # CryptoCompare
 _bfxstats_cache    = {"data": {}, "ts": 0}   # Bitfinex Stats
 _dvol_cache        = {"data": {}, "ts": 0}   # Deribit DVol
 _wtm_cache         = {"data": {}, "ts": 0}   # WhatToMine
- 
+
 BGR_TTL    = 3600
 SOSO_TTL   = 86400
 TWELVE_TTL = 3600
 EX_TTL     = 60
 INTL_TTL   = 90
 FX_TTL     = 300
- 
+
 # ══════════════════════════════════════════════════════════════
 # UTILITAIRES
 # ══════════════════════════════════════════════════════════════
@@ -122,7 +122,7 @@ def safe(v, d=6):
         return None if (math.isnan(f) or math.isinf(f)) else round(f, d)
     except:
         return None
- 
+
 def get(url, params=None, timeout=9, headers=None):
     try:
         h = {"Accept": "application/json", "User-Agent": "btc-analytics/7.0"}
@@ -135,7 +135,7 @@ def get(url, params=None, timeout=9, headers=None):
     except Exception as e:
         log.error(f"GET {url} -> {e}")
     return None
- 
+
 def sf(fn):
     """safe_fetch — attrape les exceptions d'une fonction fetch"""
     try:
@@ -143,7 +143,7 @@ def sf(fn):
     except Exception as e:
         log.warning(f"sf {fn.__name__}: {e}")
         return {}
- 
+
 # ══════════════════════════════════════════════════════════════
 # FX RATES — taux de change via exchangerate-api + CoinGecko BTC
 # ══════════════════════════════════════════════════════════════
@@ -152,12 +152,12 @@ def fetch_fx():
     now = time.time()
     if now - _fx_cache["ts"] < FX_TTL and _fx_cache["data"]:
         return _fx_cache["data"]
- 
+
     # Taux USD→devises via exchangerate-api (sans clé, fiable)
     result = {}
     d_fx = get("https://api.exchangerate-api.com/v4/latest/USD", timeout=6)
     rates_raw = d_fx.get("rates", {}) if d_fx else {}
- 
+
     # Récupération prix BTC/USD depuis CoinGecko (ou cache)
     cg = get("https://api.coingecko.com/api/v3/simple/price", {
         "ids": "bitcoin",
@@ -166,13 +166,13 @@ def fetch_fx():
     btc_usd = None
     if cg and cg.get("bitcoin", {}).get("usd"):
         btc_usd = cg["bitcoin"]["usd"]
- 
+
     # Fallback pour BTC/USD si CoinGecko rate-limité
     if not btc_usd and _cg_cache.get("data", {}).get("price_usd"):
         btc_usd = _cg_cache["data"]["price_usd"]
- 
+
     result["btc_usd_cg"] = safe(btc_usd, 2) if btc_usd else None
- 
+
     # Construction des taux et prix BTC dans chaque devise
     currencies = {
         "jpy": "JPY", "krw": "KRW", "aud": "AUD", "brl": "BRL",
@@ -185,17 +185,17 @@ def fetch_fx():
             result[f"rate_{cur_lower}"] = round(float(rate), 6)
             if btc_usd:
                 result[f"btc_{cur_lower}"] = safe(btc_usd * float(rate), 2)
- 
+
     if result:
         _fx_cache = {"data": result, "ts": now}
     return result
- 
+
 def to_usd(native_price, currency_rate):
     """Convertit un prix natif en USD via le taux (unités par USD)"""
     if native_price and currency_rate and currency_rate > 0:
         return round(native_price / currency_rate, 2)
     return None
- 
+
 # ══════════════════════════════════════════════════════════════
 # COINGECKO
 # ══════════════════════════════════════════════════════════════
@@ -228,7 +228,7 @@ def fetch_coingecko():
     if result.get("price_usd"):
         _cg_cache = {"data": result, "ts": now}
     return result
- 
+
 def fetch_coingecko_global():
     d = get("https://api.coingecko.com/api/v3/global")
     if not d:
@@ -243,7 +243,7 @@ def fetch_coingecko_global():
         "market_cap_change_24h": safe(data.get("market_cap_change_percentage_24h_usd"), 2),
         "active_cryptos":        data.get("active_cryptocurrencies"),
     }
- 
+
 def fetch_stablecoins():
     d = get("https://api.coingecko.com/api/v3/simple/price", {
         "ids": "tether,usd-coin,dai", "vs_currencies": "usd", "include_market_cap": "true"
@@ -256,7 +256,7 @@ def fetch_stablecoins():
     total = sum(x for x in [usdt, usdc, dai] if x)
     return {"usdt_market_cap": usdt, "usdc_market_cap": usdc, "dai_market_cap": dai,
             "stablecoin_total": safe(total, 0)}
- 
+
 # ══════════════════════════════════════════════════════════════
 # COINMETRICS
 # ══════════════════════════════════════════════════════════════
@@ -287,7 +287,7 @@ def fetch_coinmetrics():
     except Exception as e:
         log.warning(f"fetch_coinmetrics proxy: {e}")
     return result
- 
+
 def fetch_coinmetrics_extended():
     global _cm_ext_cache
     now = time.time()
@@ -313,7 +313,7 @@ def fetch_coinmetrics_extended():
     if result:
         _cm_ext_cache = {"data": result, "ts": now}
     return result
- 
+
 def fetch_puell_multiple():
     global _puell_cache
     now = time.time()
@@ -338,7 +338,7 @@ def fetch_puell_multiple():
     except Exception as e:
         log.warning(f"fetch_puell: {e}")
         return {}
- 
+
 # ══════════════════════════════════════════════════════════════
 # BGR / bitcoin-data.com
 # ══════════════════════════════════════════════════════════════
@@ -361,7 +361,7 @@ def fetch_bgeometrics():
     if result:
         _bgr_cache = {"data": result, "ts": now}
     return result
- 
+
 def fetch_bgr_holders():
     global _bgr_holders_cache
     now = time.time()
@@ -379,7 +379,7 @@ def fetch_bgr_holders():
     if result:
         _bgr_holders_cache = {"data": result, "ts": now}
     return result
- 
+
 # ══════════════════════════════════════════════════════════════
 # MEMPOOL.SPACE
 # ══════════════════════════════════════════════════════════════
@@ -418,7 +418,7 @@ def fetch_mempool():
                        "ln_capacity_btc": safe((l.get("total_capacity") or 0) / 1e8, 2),
                        "ln_avg_capacity_sat": safe(l.get("avg_capacity"), 0)})
     return result
- 
+
 # ══════════════════════════════════════════════════════════════
 # BLOCKCHAIN.INFO
 # ══════════════════════════════════════════════════════════════
@@ -436,7 +436,7 @@ def fetch_blockchain_info():
         "blockchain_miners_rev_usd":safe(d.get("miners_revenue_usd"), 2),
         "blockchain_hash_rate_gh":  safe(d.get("hash_rate"), 2),
     }
- 
+
 def fetch_blockchain_query():
     result = {}
     try:
@@ -461,7 +461,7 @@ def fetch_blockchain_query():
             result["bi_latest_hash"] = h[:20] + "..." if len(h) > 20 else h
     except: pass
     return result
- 
+
 # ══════════════════════════════════════════════════════════════
 # BLOCKCHAIR
 # ══════════════════════════════════════════════════════════════
@@ -479,7 +479,7 @@ def fetch_blockchair():
         "bc_vol_24h_sat":        safe(data.get("volume_24h"), 0),   # en satoshis
         "mempool_tps":           safe(data.get("mempool_tps"), 2),
     }
- 
+
 # ══════════════════════════════════════════════════════════════
 # BLOCKSTREAM.INFO
 # ══════════════════════════════════════════════════════════════
@@ -498,7 +498,7 @@ def fetch_blockstream():
             result["blockstream_mempool_vsize_mb"] = safe((d.get("vsize") or 0) / 1e6, 2)
     except: pass
     return result
- 
+
 # ══════════════════════════════════════════════════════════════
 # BITNODES.IO
 # ══════════════════════════════════════════════════════════════
@@ -510,7 +510,7 @@ def fetch_bitnodes():
     if not results:
         return {}
     return {"bitnodes_total": safe(results[0].get("total_nodes"), 0)}
- 
+
 # ══════════════════════════════════════════════════════════════
 # COINPAPRIKA
 # ══════════════════════════════════════════════════════════════
@@ -523,7 +523,7 @@ def fetch_coinpaprika():
             "beta_value": safe(d.get("beta_value"), 4),
             "rank": d.get("rank"),
             "pct_supply_issued": safe((d.get("total_supply") or 0) / 21_000_000 * 100, 4)}
- 
+
 def fetch_coinpaprika_ohlcv():
     d = get("https://api.coinpaprika.com/v1/coins/btc-bitcoin/ohlcv/today", timeout=8)
     if not d or not isinstance(d, list) or not d:
@@ -532,7 +532,7 @@ def fetch_coinpaprika_ohlcv():
     return {"cp_ohlcv_open": safe(row.get("open"), 2), "cp_ohlcv_high": safe(row.get("high"), 2),
             "cp_ohlcv_low": safe(row.get("low"), 2), "cp_ohlcv_close": safe(row.get("close"), 2),
             "cp_ohlcv_vol": safe(row.get("volume"), 0)}
- 
+
 # ══════════════════════════════════════════════════════════════
 # ALTERNATIVE.ME — Fear & Greed + Ticker
 # ══════════════════════════════════════════════════════════════
@@ -549,7 +549,7 @@ def fetch_fear_greed():
             for x in data
         ],
     }
- 
+
 def fetch_altme_ticker():
     d = get("https://api.alternative.me/v2/ticker/1/?convert=USD", timeout=8)
     if not d:
@@ -559,7 +559,7 @@ def fetch_altme_ticker():
     return {"altme_price": safe(q.get("price"), 2), "altme_market_cap": safe(q.get("market_cap"), 0),
             "altme_volume_24h": safe(q.get("volume_24h"), 0),
             "altme_change_24h": safe(q.get("percent_change_24h"), 4)}
- 
+
 # ══════════════════════════════════════════════════════════════
 # COINBASE
 # ══════════════════════════════════════════════════════════════
@@ -575,7 +575,7 @@ def fetch_coinbase():
     if result.get("price_coinbase"):
         _cb_cache = {"data": result, "ts": now}
     return result
- 
+
 # ══════════════════════════════════════════════════════════════
 # KRAKEN — OHLC + technicals
 # ══════════════════════════════════════════════════════════════
@@ -595,7 +595,7 @@ def fetch_kraken_ohlc():
             "kraken_low": safe(last[3], 2), "kraken_close": safe(last[4], 2),
             "kraken_vwap": safe(last[5], 2), "kraken_volume": safe(last[6], 4)}
     return meta, ohlc
- 
+
 def compute_technicals(ohlc_list):
     if not ohlc_list or len(ohlc_list) < 30:
         return {}
@@ -633,7 +633,7 @@ def compute_technicals(ohlc_list):
         "price_vs_ma30": round((cur/ma30-1)*100, 2) if ma30 else None,
         "price_vs_ma200": round((cur/ma200-1)*100, 2) if ma200 else None,
     }
- 
+
 # ══════════════════════════════════════════════════════════════
 # MINING POOLS
 # ══════════════════════════════════════════════════════════════
@@ -656,7 +656,7 @@ def fetch_mining_pools():
     if result:
         _pools_cache = {"data": result, "ts": now}
     return result
- 
+
 # ══════════════════════════════════════════════════════════════
 # 1ML.COM — Lightning (alternative à Mempool)
 # ══════════════════════════════════════════════════════════════
@@ -681,7 +681,7 @@ def fetch_1ml():
     except Exception as e:
         log.warning(f"1ml: {e}")
         return _1ml_cache.get("data", {})
- 
+
 # ══════════════════════════════════════════════════════════════
 # DEXSCREENER — WBTC on Ethereum (DEX)
 # ══════════════════════════════════════════════════════════════
@@ -705,7 +705,7 @@ def fetch_dexscreener():
     if result.get("dex_wbtc_price_usd"):
         _dex_cache = {"data": result, "ts": now}
     return result
- 
+
 # ══════════════════════════════════════════════════════════════
 # STOOQ — historique prix 30j (CSV sans clé)
 # ══════════════════════════════════════════════════════════════
@@ -747,7 +747,7 @@ def fetch_stooq_history():
     except Exception as e:
         log.warning(f"stooq: {e}")
         return _stooq_cache.get("data", {})
- 
+
 # ══════════════════════════════════════════════════════════════
 # EXCHANGES USD (20 sources)
 # ══════════════════════════════════════════════════════════════
@@ -757,7 +757,7 @@ def fetch_binance():
     return {"binance_price": safe(d.get("lastPrice"), 2), "binance_vol_usd": safe(d.get("quoteVolume"), 2),
             "binance_change_24h": safe(d.get("priceChangePercent"), 4),
             "binance_high_24h": safe(d.get("highPrice"), 2), "binance_low_24h": safe(d.get("lowPrice"), 2)}
- 
+
 def fetch_bitfinex():
     d = get("https://api-pub.bitfinex.com/v2/ticker/tBTCUSD")
     if not d or not isinstance(d, list) or len(d) < 10: return {}
@@ -765,21 +765,21 @@ def fetch_bitfinex():
             "bitfinex_high_24h": safe(d[8], 2), "bitfinex_low_24h": safe(d[9], 2),
             "bitfinex_change_pct": safe(d[5]*100, 4) if d[5] is not None else None,
             "bitfinex_bid": safe(d[0], 2), "bitfinex_ask": safe(d[2], 2)}
- 
+
 def fetch_bitstamp():
     d = get("https://www.bitstamp.net/api/v2/ticker/btcusd/")
     if not d: return {}
     return {"bitstamp_price": safe(d.get("last"), 2), "bitstamp_vol": safe(d.get("volume"), 4),
             "bitstamp_high_24h": safe(d.get("high"), 2), "bitstamp_low_24h": safe(d.get("low"), 2),
             "bitstamp_bid": safe(d.get("bid"), 2), "bitstamp_ask": safe(d.get("ask"), 2)}
- 
+
 def fetch_okx():
     d = get("https://www.okx.com/api/v5/market/ticker", {"instId": "BTC-USDT"})
     if not d: return {}
     data = (d.get("data") or [{}])[0]
     return {"okx_price": safe(data.get("last"), 2), "okx_vol_usd": safe(data.get("volCcy24h"), 2),
             "okx_high_24h": safe(data.get("high24h"), 2), "okx_low_24h": safe(data.get("low24h"), 2)}
- 
+
 def fetch_bybit():
     d = get("https://api.bybit.com/v5/market/tickers", {"category": "spot", "symbol": "BTCUSDT"})
     if not d: return {}
@@ -789,13 +789,13 @@ def fetch_bybit():
     return {"bybit_price": safe(data.get("lastPrice"), 2), "bybit_vol_usd": safe(data.get("turnover24h"), 2),
             "bybit_high_24h": safe(data.get("highPrice24h"), 2), "bybit_low_24h": safe(data.get("lowPrice24h"), 2),
             "bybit_change_24h": safe(chg*100 if chg else None, 4)}
- 
+
 def fetch_gemini():
     d = get("https://api.gemini.com/v1/pubticker/btcusd")
     if not d: return {}
     return {"gemini_price": safe(d.get("last"), 2), "gemini_bid": safe(d.get("bid"), 2),
             "gemini_ask": safe(d.get("ask"), 2), "gemini_vol": safe(d.get("volume", {}).get("BTC"), 4)}
- 
+
 def fetch_kucoin():
     d = get("https://api.kucoin.com/api/v1/market/stats", {"symbol": "BTC-USDT"})
     if not d: return {}
@@ -804,7 +804,7 @@ def fetch_kucoin():
     return {"kucoin_price": safe(data.get("last"), 2), "kucoin_vol_usd": safe(data.get("volValue"), 2),
             "kucoin_high_24h": safe(data.get("high"), 2), "kucoin_low_24h": safe(data.get("low"), 2),
             "kucoin_change_24h": safe(chg*100 if chg else None, 4)}
- 
+
 def fetch_gate_io():
     d = get("https://api.gateio.ws/api/v4/spot/tickers", {"currency_pair": "BTC_USDT"})
     if not d or not isinstance(d, list): return {}
@@ -812,21 +812,21 @@ def fetch_gate_io():
     return {"gate_price": safe(data.get("last"), 2), "gate_vol_usd": safe(data.get("quote_volume"), 2),
             "gate_high_24h": safe(data.get("high_24h"), 2), "gate_low_24h": safe(data.get("low_24h"), 2),
             "gate_change_pct": safe(data.get("change_percentage"), 4)}
- 
+
 def fetch_htx():
     d = get("https://api.huobi.pro/market/detail/merged", {"symbol": "btcusdt"})
     if not d: return {}
     tick = d.get("tick", {})
     return {"htx_price": safe(tick.get("close"), 2), "htx_vol_usd": safe(tick.get("vol"), 2),
             "htx_high_24h": safe(tick.get("high"), 2), "htx_low_24h": safe(tick.get("low"), 2)}
- 
+
 def fetch_mexc():
     d = get("https://api.mexc.com/api/v3/ticker/24hr", {"symbol": "BTCUSDT"})
     if not d: return {}
     return {"mexc_price": safe(d.get("lastPrice"), 2), "mexc_vol_usd": safe(d.get("quoteVolume"), 2),
             "mexc_change_24h": safe(d.get("priceChangePercent"), 4),
             "mexc_high_24h": safe(d.get("highPrice"), 2), "mexc_low_24h": safe(d.get("lowPrice"), 2)}
- 
+
 def fetch_bitget():
     d = get("https://api.bitget.com/api/v2/spot/market/tickers", {"symbol": "BTCUSDT"})
     if not d: return {}
@@ -835,14 +835,14 @@ def fetch_bitget():
     return {"bitget_price": safe(data.get("lastPr"), 2), "bitget_vol_usd": safe(data.get("quoteVol"), 2),
             "bitget_change_24h": safe(chg*100 if chg else None, 4),
             "bitget_high_24h": safe(data.get("high24h"), 2), "bitget_low_24h": safe(data.get("low24h"), 2)}
- 
+
 def fetch_coinex():
     d = get("https://api.coinex.com/v2/spot/ticker", {"market": "BTCUSDT"})
     if not d: return {}
     data = (d.get("data") or [{}])[0]
     return {"coinex_price": safe(data.get("close"), 2), "coinex_vol": safe(data.get("volume"), 4),
             "coinex_high_24h": safe(data.get("high"), 2), "coinex_low_24h": safe(data.get("low"), 2)}
- 
+
 def fetch_lbank():
     d = get("https://api.lbank.info/v2/ticker/24hr.do", {"symbol": "btc_usdt"})
     if not d: return {}
@@ -850,14 +850,14 @@ def fetch_lbank():
     ticker = data.get("ticker", {})
     return {"lbank_price": safe(ticker.get("latest"), 2), "lbank_vol": safe(ticker.get("vol"), 4),
             "lbank_high_24h": safe(ticker.get("high"), 2), "lbank_low_24h": safe(ticker.get("low"), 2)}
- 
+
 def fetch_whitebit():
     d = get("https://whitebit.com/api/v4/public/ticker", timeout=8)
     if not d: return {}
     data = d.get("BTC_USDT", {})
     return {"whitebit_price": safe(data.get("last_price"), 2), "whitebit_vol": safe(data.get("base_volume"), 4),
             "whitebit_high_24h": safe(data.get("high"), 2), "whitebit_low_24h": safe(data.get("low"), 2)}
- 
+
 def fetch_coincap():
     d = get("https://api.coincap.io/v2/assets/bitcoin")
     if not d: return {}
@@ -865,7 +865,7 @@ def fetch_coincap():
     return {"coincap_price": safe(data.get("priceUsd"), 2), "coincap_supply": safe(data.get("supply"), 0),
             "coincap_market_cap": safe(data.get("marketCapUsd"), 0), "coincap_vol_24h": safe(data.get("volumeUsd24Hr"), 0),
             "coincap_change_24h": safe(data.get("changePercent24Hr"), 4), "coincap_vwap_24h": safe(data.get("vwap24Hr"), 2)}
- 
+
 def fetch_deribit():
     d = get("https://www.deribit.com/api/v2/public/get_index_price", {"index_name": "btc_usd"})
     if not d: return {}
@@ -878,7 +878,7 @@ def fetch_deribit():
                        "deribit_open_interest": safe(r2.get("open_interest"), 2),
                        "deribit_volume_usd": safe(r2.get("volume_usd"), 0)})
     return result
- 
+
 # ══════════════════════════════════════════════════════════════
 # EXCHANGES USD SUPPLÉMENTAIRES — v8 (+6 sources)
 # ══════════════════════════════════════════════════════════════
@@ -899,7 +899,7 @@ def fetch_poloniex():
     }
     if result.get("poloniex_price"): _poloniex_cache = {"data": result, "ts": now}
     return result
- 
+
 def fetch_cryptodotcom():
     global _cdotcom_cache
     now = time.time()
@@ -920,7 +920,7 @@ def fetch_cryptodotcom():
     }
     if result.get("cdotcom_price"): _cdotcom_cache = {"data": result, "ts": now}
     return result
- 
+
 def fetch_bitmart():
     global _bitmart_cache
     now = time.time()
@@ -939,7 +939,7 @@ def fetch_bitmart():
     }
     if result.get("bitmart_price"): _bitmart_cache = {"data": result, "ts": now}
     return result
- 
+
 def fetch_btse():
     global _btse_cache
     now = time.time()
@@ -954,7 +954,7 @@ def fetch_btse():
     }
     if result.get("btse_price"): _btse_cache = {"data": result, "ts": now}
     return result
- 
+
 def fetch_coinlore():
     global _coinlore_cache
     now = time.time()
@@ -973,7 +973,7 @@ def fetch_coinlore():
     }
     if result.get("coinlore_price"): _coinlore_cache = {"data": result, "ts": now}
     return result
- 
+
 def fetch_coinranking():
     global _coinranking_cache
     now = time.time()
@@ -984,7 +984,7 @@ def fetch_coinranking():
     result = {"coinranking_price": safe(d.get("data", {}).get("price"), 2)}
     if result.get("coinranking_price"): _coinranking_cache = {"data": result, "ts": now}
     return result
- 
+
 def fetch_xtcom():
     """XT.com — Exchange USD (BTC/USDT) v9"""
     global _xtcom_cache
@@ -1004,7 +1004,7 @@ def fetch_xtcom():
     }
     if result.get("xtcom_price"): _xtcom_cache = {"data": result, "ts": now}
     return result
- 
+
 # ══════════════════════════════════════════════════════════════
 # EXCHANGES INTERNATIONAUX SUPPLÉMENTAIRES — v8 (+8 sources)
 # ══════════════════════════════════════════════════════════════
@@ -1044,7 +1044,7 @@ def fetch_foxbit():
     except Exception as e:
         log.warning(f"foxbit: {e}")
         return _foxbit_cache.get("data", {})
- 
+
 def fetch_novadax():
     """Brésil — NovaDax (BTC/BRL)"""
     global _novadax_cache
@@ -1065,7 +1065,7 @@ def fetch_novadax():
     }
     if result.get("novadax_price_brl"): _novadax_cache = {"data": result, "ts": now}
     return result
- 
+
 def fetch_luno():
     """Afrique du Sud — Luno (BTC/ZAR)"""
     global _luno_cache
@@ -1085,7 +1085,7 @@ def fetch_luno():
     }
     if result.get("luno_price_zar"): _luno_cache = {"data": result, "ts": now}
     return result
- 
+
 def fetch_valr():
     """Afrique du Sud — VALR (BTC/ZAR)"""
     global _valr_cache
@@ -1104,7 +1104,7 @@ def fetch_valr():
     }
     if result.get("valr_price_zar"): _valr_cache = {"data": result, "ts": now}
     return result
- 
+
 def fetch_bitso():
     """Mexique — Bitso (BTC/MXN)"""
     global _bitso_cache
@@ -1127,7 +1127,7 @@ def fetch_bitso():
     }
     if result.get("bitso_price_mxn"): _bitso_cache = {"data": result, "ts": now}
     return result
- 
+
 def fetch_coindcx():
     """Inde — CoinDCX (BTC/INR)"""
     global _coindcx_cache
@@ -1155,7 +1155,7 @@ def fetch_coindcx():
     except Exception as e:
         log.warning(f"coindcx: {e}")
         return _coindcx_cache.get("data", {})
- 
+
 def fetch_wazirx():
     """Inde — WazirX (BTC/INR)"""
     global _wazirx_cache
@@ -1175,7 +1175,7 @@ def fetch_wazirx():
     }
     if result.get("wazirx_price_inr"): _wazirx_cache = {"data": result, "ts": now}
     return result
- 
+
 def fetch_indodax():
     """Indonésie — Indodax (BTC/IDR)"""
     global _indodax_cache
@@ -1196,7 +1196,7 @@ def fetch_indodax():
     }
     if result.get("indodax_price_idr"): _indodax_cache = {"data": result, "ts": now}
     return result
- 
+
 # ══════════════════════════════════════════════════════════════
 # EXCHANGES INTERNATIONAUX (non-USD natif)
 # ══════════════════════════════════════════════════════════════
@@ -1205,19 +1205,19 @@ def fetch_international():
     now = time.time()
     if now - _intl_cache["ts"] < INTL_TTL and _intl_cache["data"]:
         return _intl_cache["data"]
- 
+
     fx = fetch_fx()
     rate_jpy = fx.get("rate_jpy", 0)
     rate_krw = fx.get("rate_krw", 0)
     rate_aud = fx.get("rate_aud", 0)
     rate_brl = fx.get("rate_brl", 0)
     rate_try = fx.get("rate_try", 0)
- 
+
     result = {"btc_jpy_ref": fx.get("btc_jpy"), "btc_krw_ref": fx.get("btc_krw"),
               "btc_aud_ref": fx.get("btc_aud"), "btc_brl_ref": fx.get("btc_brl"),
               "btc_zar_ref": fx.get("btc_zar"), "btc_mxn_ref": fx.get("btc_mxn"),
               "btc_inr_ref": fx.get("btc_inr"), "btc_idr_ref": fx.get("btc_idr")}
- 
+
     # ── JAPON ──────────────────────────────────────────────────
     d = get("https://api.bitflyer.com/v1/ticker", {"product_code": "BTC_JPY"})
     if d:
@@ -1225,21 +1225,21 @@ def fetch_international():
         result.update({"bitflyer_price_jpy": p, "bitflyer_vol": safe(d.get("volume_by_product"), 4),
                        "bitflyer_bid_jpy": safe(d.get("best_bid"), 0), "bitflyer_ask_jpy": safe(d.get("best_ask"), 0),
                        "bitflyer_price_usd": to_usd(p, rate_jpy)})
- 
+
     d = get("https://coincheck.com/api/ticker")
     if d:
         p = safe(d.get("last"), 0)
         result.update({"coincheck_price_jpy": p, "coincheck_vol": safe(d.get("volume"), 4),
                        "coincheck_bid_jpy": safe(d.get("bid"), 0), "coincheck_ask_jpy": safe(d.get("ask"), 0),
                        "coincheck_price_usd": to_usd(p, rate_jpy)})
- 
+
     d = get("https://api.zaif.jp/api/1/ticker/btc_jpy")
     if d:
         p = safe(d.get("last"), 0)
         result.update({"zaif_price_jpy": p, "zaif_vol": safe(d.get("volume"), 4),
                        "zaif_vwap_jpy": safe(d.get("vwap"), 0),
                        "zaif_price_usd": to_usd(p, rate_jpy)})
- 
+
     # ── CORÉE DU SUD ───────────────────────────────────────────
     d = get("https://api.upbit.com/v1/ticker", {"markets": "KRW-BTC"})
     if d and isinstance(d, list) and d:
@@ -1250,7 +1250,7 @@ def fetch_international():
                        "upbit_change_24h": safe(chg*100 if chg else None, 4),
                        "upbit_high_24h_krw": safe(row.get("high_price"), 0), "upbit_low_24h_krw": safe(row.get("low_price"), 0),
                        "upbit_price_usd": to_usd(p, rate_krw)})
- 
+
     d = get("https://api.bithumb.com/public/ticker/BTC_KRW")
     if d and d.get("status") == "0000":
         data = d.get("data", {})
@@ -1258,12 +1258,12 @@ def fetch_international():
         result.update({"bithumb_price_krw": p, "bithumb_vol": safe(data.get("units_traded_24H"), 4),
                        "bithumb_high_krw": safe(data.get("max_price"), 0), "bithumb_low_krw": safe(data.get("min_price"), 0),
                        "bithumb_price_usd": to_usd(p, rate_krw)})
- 
+
     d = get("https://api.korbit.co.kr/v1/ticker", {"currency_pair": "btc_krw"})
     if d:
         p = safe(d.get("last"), 0)
         result.update({"korbit_price_krw": p, "korbit_price_usd": to_usd(p, rate_krw)})
- 
+
     # ── AUSTRALIE ──────────────────────────────────────────────
     d = get("https://api.btcmarkets.net/v3/markets/BTC-AUD/ticker")
     if d:
@@ -1271,7 +1271,7 @@ def fetch_international():
         result.update({"btcmarkets_price_aud": p, "btcmarkets_bid_aud": safe(d.get("bestBid"), 2),
                        "btcmarkets_ask_aud": safe(d.get("bestAsk"), 2),
                        "btcmarkets_price_usd": to_usd(p, rate_aud)})
- 
+
     # ── TURQUIE ────────────────────────────────────────────────
     d = get("https://api.btcturk.com/api/v2/ticker", {"pairSymbol": "BTCUSDT"})
     if d and d.get("data"):
@@ -1279,14 +1279,14 @@ def fetch_international():
         result.update({"btcturk_price_usdt": safe(row.get("last"), 2),
                        "btcturk_vol": safe(row.get("volume"), 4),
                        "btcturk_high_24h": safe(row.get("high"), 2), "btcturk_low_24h": safe(row.get("low"), 2)})
- 
+
     d = get("https://www.paribu.com/ticker")
     if d and isinstance(d, dict):
         btc_data = d.get("BTC_TL") or d.get("BTC-TL") or {}
         p = safe(btc_data.get("last"), 2)
         if p:
             result.update({"paribu_price_try": p, "paribu_price_usd": to_usd(p, rate_try)})
- 
+
     # ── BRÉSIL ─────────────────────────────────────────────────
     d = get("https://www.mercadobitcoin.net/api/BTC/ticker/")
     if d and d.get("ticker"):
@@ -1295,36 +1295,36 @@ def fetch_international():
         result.update({"mercado_price_brl": p, "mercado_vol": safe(tick.get("vol"), 4),
                        "mercado_high_brl": safe(tick.get("high"), 2), "mercado_low_brl": safe(tick.get("low"), 2),
                        "mercado_price_usd": to_usd(p, rate_brl)})
- 
+
     # ── RUSSIE/EUROPE — Exmo ────────────────────────────────────
     d = get("https://api.exmo.com/v1.1/ticker")
     if d and isinstance(d, dict) and "BTC_USD" in d:
         t = d["BTC_USD"]
         result.update({"exmo_price_usd": safe(t.get("last_trade"), 2), "exmo_vol_btc": safe(t.get("vol"), 4),
                        "exmo_high_24h": safe(t.get("high"), 2), "exmo_low_24h": safe(t.get("low"), 2)})
- 
+
     # ── AFRIQUE DU SUD (v8) ────────────────────────────────────
     result.update(sf(fetch_luno))
     result.update(sf(fetch_valr))
- 
+
     # ── MEXIQUE (v8) ───────────────────────────────────────────
     result.update(sf(fetch_bitso))
- 
+
     # ── INDE (v8) ─────────────────────────────────────────────
     result.update(sf(fetch_coindcx))
     result.update(sf(fetch_wazirx))
- 
+
     # ── INDONÉSIE (v8) ────────────────────────────────────────
     result.update(sf(fetch_indodax))
- 
+
     # ── BRÉSIL SUPPLÉMENTAIRE (v8) ────────────────────────────
     result.update(sf(fetch_foxbit))
     result.update(sf(fetch_novadax))
- 
+
     if result:
         _intl_cache = {"data": result, "ts": now}
     return result
- 
+
 # ══════════════════════════════════════════════════════════════
 # ETF — SoSoValue + TwelveData
 # ══════════════════════════════════════════════════════════════
@@ -1366,7 +1366,7 @@ def fetch_sosovalue_etf():
     except Exception as e:
         log.error(f"SoSoValue: {e}")
         return {}
- 
+
 def fetch_twelvedata_etf():
     global _twelve_cache
     now = time.time()
@@ -1392,7 +1392,7 @@ def fetch_twelvedata_etf():
     if result:
         _twelve_cache = {"data": result, "ts": now}
     return result
- 
+
 # ══════════════════════════════════════════════════════════════
 # SIGNAUX & ALERTES
 # ══════════════════════════════════════════════════════════════
@@ -1459,11 +1459,11 @@ def compute_signals(d):
     s["alerts"] = alerts
     s["active_alerts"] = len(alerts)
     return s
- 
+
 # ══════════════════════════════════════════════════════════════
 # NOUVELLES SOURCES v9 — DÉRIVÉS & FUTURES
 # ══════════════════════════════════════════════════════════════
- 
+
 def fetch_binance_futures():
     """Binance USDT-M Futures (FAPI) — Funding rate, OI, L/S ratio"""
     global _bnf_cache
@@ -1509,8 +1509,8 @@ def fetch_binance_futures():
     if result.get("bnf_mark_price"):
         _bnf_cache = {"data": result, "ts": now}
     return result
- 
- 
+
+
 def fetch_kraken_futures():
     """Kraken Futures — BTC Perpetual (PF_XBTUSD)"""
     global _krf_cache
@@ -1539,8 +1539,8 @@ def fetch_kraken_futures():
     if result:
         _krf_cache = {"data": result, "ts": now}
     return result
- 
- 
+
+
 def fetch_bitmex():
     """BitMEX — XBTUSD Perpetual Swap"""
     global _bitmex_cache
@@ -1566,8 +1566,8 @@ def fetch_bitmex():
     if result.get("bitmex_last_price"):
         _bitmex_cache = {"data": result, "ts": now}
     return result
- 
- 
+
+
 def fetch_hyperliquid():
     """Hyperliquid — DEX Perpetuals BTC (sans clé)"""
     global _hyper_cache
@@ -1605,8 +1605,8 @@ def fetch_hyperliquid():
     except Exception as e:
         log.warning(f"hyperliquid: {e}")
         return _hyper_cache.get("data", {})
- 
- 
+
+
 def fetch_bitget_futures():
     """Bitget USDT Futures — BTC Perpetual v9"""
     global _bgf_cache
@@ -1630,8 +1630,8 @@ def fetch_bitget_futures():
     if result.get("bgf_last_price"):
         _bgf_cache = {"data": result, "ts": now}
     return result
- 
- 
+
+
 def fetch_deribit_dvol():
     """Deribit — Bitcoin Volatility Index (DVol)"""
     global _dvol_cache
@@ -1658,8 +1658,8 @@ def fetch_deribit_dvol():
     if result:
         _dvol_cache = {"data": result, "ts": now}
     return result
- 
- 
+
+
 def fetch_bitfinex_stats():
     """Bitfinex Stats — Positions long/short BTC (gratuit)"""
     global _bfxstats_cache
@@ -1693,12 +1693,12 @@ def fetch_bitfinex_stats():
     if result:
         _bfxstats_cache = {"data": result, "ts": now}
     return result
- 
- 
+
+
 # ══════════════════════════════════════════════════════════════
 # NOUVELLES SOURCES v9 — DEFI / TVL
 # ══════════════════════════════════════════════════════════════
- 
+
 def fetch_defillama():
     """DefiLlama — Bitcoin Ecosystem DeFi TVL (WBTC, tBTC, Babylon, Lombard...)"""
     global _defillama_cache
@@ -1744,12 +1744,12 @@ def fetch_defillama():
     if result:
         _defillama_cache = {"data": result, "ts": now}
     return result
- 
- 
+
+
 # ══════════════════════════════════════════════════════════════
 # NOUVELLES SOURCES v9 — ANALYTICS
 # ══════════════════════════════════════════════════════════════
- 
+
 def fetch_cryptocompare():
     """OKX Klines — Historique OHLCV 30 jours (remplace CryptoCompare)"""
     global _cc_cache
@@ -1787,8 +1787,8 @@ def fetch_cryptocompare():
     except Exception as e:
         log.warning(f"cc_hist: {e}")
         return _cc_cache.get("data", {})
- 
- 
+
+
 def fetch_messari():
     """CoinPaprika Extended — Métriques BTC (remplace Messari tier gratuit)"""
     global _messari_cache
@@ -1822,8 +1822,8 @@ def fetch_messari():
     if result.get("messari_price"):
         _messari_cache = {"data": result, "ts": now}
     return result
- 
- 
+
+
 def fetch_whattomine():
     """WhatToMine — Profitabilité Mining BTC (endpoint coin id=1)"""
     global _wtm_cache
@@ -1845,8 +1845,8 @@ def fetch_whattomine():
     if result.get("wtm_btc_block_reward"):
         _wtm_cache = {"data": result, "ts": now}
     return result
- 
- 
+
+
 def fetch_coinmetrics_deep():
     """CoinMetrics Community — Métriques disponibles en tier gratuit: AdrActCnt, HashRate"""
     global _cm_deep_cache
@@ -1888,8 +1888,8 @@ def fetch_coinmetrics_deep():
     if result.get("cm_active_addresses"):
         _cm_deep_cache = {"data": result, "ts": now}
     return result
- 
- 
+
+
 def fetch_mempool_blocks():
     """Mempool.space — Derniers blocs minés (stats détaillées)"""
     global _mempool_deep_cache
@@ -1918,8 +1918,8 @@ def fetch_mempool_blocks():
     if result:
         _mempool_deep_cache = {"data": result, "ts": now}
     return result
- 
- 
+
+
 def fetch_blockchain_charts():
     """Blockchain.info Charts API — Hashrate & Transactions historique"""
     global _bcinfo_chart_cache
@@ -1957,8 +1957,8 @@ def fetch_blockchain_charts():
     if result:
         _bcinfo_chart_cache = {"data": result, "ts": now}
     return result
- 
- 
+
+
 # ══════════════════════════════════════════════════════════════
 # PAGE HTML
 # ══════════════════════════════════════════════════════════════
@@ -1973,11 +1973,11 @@ async def serve_index():
         if candidate.exists():
             return HTMLResponse(content=candidate.read_text(encoding="utf-8"))
     return HTMLResponse("<h1>index.html not found</h1>", status_code=404)
- 
+
 # ══════════════════════════════════════════════════════════════
 # ENDPOINTS API
 # ══════════════════════════════════════════════════════════════
- 
+
 @app.get("/api/health")
 def health():
     now = time.time()
@@ -2005,8 +2005,8 @@ def health():
         }.items()},
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
- 
- 
+
+
 @app.get("/api/exchanges")
 def get_exchanges():
     """19 exchanges USD + DEX WBTC + spread arbitrage"""
@@ -2014,7 +2014,7 @@ def get_exchanges():
     now = time.time()
     if now - _ex_cache["ts"] < EX_TTL and _ex_cache["data"]:
         return _ex_cache["data"]
- 
+
     cg = fetch_coingecko(); cb = fetch_coinbase()
     kr_meta, _ = fetch_kraken_ohlc()
     bn = sf(fetch_binance); bfx = sf(fetch_bitfinex); bst = sf(fetch_bitstamp)
@@ -2028,7 +2028,7 @@ def get_exchanges():
     bmt = sf(fetch_bitmart); bts = sf(fetch_btse)
     clr = sf(fetch_coinlore); crk = sf(fetch_coinranking)
     xtc = sf(fetch_xtcom)
- 
+
     prices_raw = {
         "CoinGecko": cg.get("price_usd"), "Binance": bn.get("binance_price"),
         "Bitfinex": bfx.get("bitfinex_price"), "Bitstamp": bst.get("bitstamp_price"),
@@ -2055,11 +2055,11 @@ def get_exchanges():
         max_p = max(valid.values()); min_p = min(valid.values())
         spread_pct = round((max_p - min_p) / min_p * 100, 4) if min_p > 0 else None
         max_ex = max(valid, key=valid.get); min_ex = min(valid, key=valid.get)
- 
+
     exchange_list = [{"name": k, "price": v,
                       "diff_avg": round((v - avg_p) / avg_p * 100, 4) if avg_p else None}
                      for k, v in sorted(valid.items(), key=lambda x: x[1], reverse=True)]
- 
+
     result = {
         "exchange_prices": exchange_list, "exchange_count": len(valid),
         "avg_price": avg_p, "arbitrage_spread_pct": spread_pct,
@@ -2071,20 +2071,20 @@ def get_exchanges():
     }
     _ex_cache = {"data": result, "ts": now}
     return result
- 
- 
+
+
 @app.get("/api/international")
 def get_international():
     """11 exchanges internationaux (JP, KR, AU, TR, BR, RU) avec conversion USD"""
     return {**fetch_international(), "updated_at": datetime.now(timezone.utc).isoformat()}
- 
- 
+
+
 @app.get("/api/fx")
 def get_fx():
     """Taux de change BTC dans les principales devises mondiales"""
     return {**fetch_fx(), "updated_at": datetime.now(timezone.utc).isoformat()}
- 
- 
+
+
 @app.get("/api/onchain")
 def get_onchain():
     cg = sf(fetch_coingecko); cm = sf(fetch_coinmetrics); bgr = sf(fetch_bgeometrics)
@@ -2099,8 +2099,8 @@ def get_onchain():
     if not all_data.get("price_usd"):
         all_data["price_usd"] = sf(fetch_coinbase).get("price_coinbase")
     return {**all_data, **compute_signals(all_data), "updated_at": datetime.now(timezone.utc).isoformat()}
- 
- 
+
+
 @app.get("/api/network")
 def get_network():
     return {**sf(fetch_blockchair), **sf(fetch_mempool), **sf(fetch_blockchain_info),
@@ -2108,8 +2108,8 @@ def get_network():
             **sf(fetch_mining_pools), **sf(fetch_coinpaprika_ohlcv),
             **sf(fetch_mempool_blocks), **sf(fetch_blockchain_charts), **sf(fetch_whattomine),
             "updated_at": datetime.now(timezone.utc).isoformat()}
- 
- 
+
+
 @app.get("/api/lightning")
 def get_lightning():
     mem = sf(fetch_mempool); ml = sf(fetch_1ml)
@@ -2119,8 +2119,8 @@ def get_lightning():
     return {**{k: mem.get(k) for k in ["ln_channels","ln_nodes","ln_capacity_btc","ln_avg_capacity_sat"]},
             **ml, "ln_capacity_usd": round(cap * price, 0) if cap and price else None,
             "updated_at": datetime.now(timezone.utc).isoformat()}
- 
- 
+
+
 @app.get("/api/market")
 def get_market():
     cg = sf(fetch_coingecko); cg_gl = sf(fetch_coingecko_global); stable = sf(fetch_stablecoins)
@@ -2130,8 +2130,8 @@ def get_market():
     if not all_data.get("price_usd"):
         all_data["price_usd"] = all_data.get("price_coinbase") or all_data.get("kraken_close")
     return {**all_data, **compute_signals(all_data), "updated_at": datetime.now(timezone.utc).isoformat()}
- 
- 
+
+
 @app.get("/api/etf")
 def get_etf():
     soso = sf(fetch_sosovalue_etf); twelve = sf(fetch_twelvedata_etf)
@@ -2142,20 +2142,20 @@ def get_etf():
                 "twelvedata_key_set": bool(os.environ.get("TWELVE_DATA_KEY")),
                 "updated_at": datetime.now(timezone.utc).isoformat()}
     return {**merged, "updated_at": datetime.now(timezone.utc).isoformat()}
- 
- 
+
+
 @app.get("/api/stooq")
 def get_stooq():
     return {**sf(fetch_stooq_history), "updated_at": datetime.now(timezone.utc).isoformat()}
- 
- 
+
+
 @app.get("/api/alerts")
 def get_alerts():
     cg = sf(fetch_coingecko); cm = sf(fetch_coinmetrics); bgr = sf(fetch_bgeometrics)
     fg = sf(fetch_fear_greed); kr_meta, ohlc = fetch_kraken_ohlc(); tech = compute_technicals(ohlc)
     return compute_signals({**cg, **cm, **bgr, **fg, **tech, **kr_meta}).get("alerts", [])
- 
- 
+
+
 @app.get("/api/sources")
 def get_sources():
     """Catalogue complet des 70 APIs gratuites intégrées"""
@@ -2293,8 +2293,8 @@ def get_sources():
         },
         "updated_at": datetime.now(timezone.utc).isoformat()
     }
- 
- 
+
+
 @app.get("/api/summary")
 def get_summary():
     cg = sf(fetch_coingecko); cg_gl = sf(fetch_coingecko_global); stable = sf(fetch_stablecoins)
@@ -2307,29 +2307,29 @@ def get_summary():
     pools = sf(fetch_mining_pools); puell = sf(fetch_puell_multiple); altme = sf(fetch_altme_ticker)
     cm_deep = sf(fetch_coinmetrics_deep); messari = sf(fetch_messari)
     bnf = sf(fetch_binance_futures); wtm = sf(fetch_whattomine)
- 
+
     price = cg.get("price_usd"); ma200 = tech.get("ma_200d")
     mayer = round(price / ma200, 4) if price and ma200 and ma200 > 0 else None
     lth_rp = bgr_h.get("lth_realized_price"); ma30 = tech.get("ma_30d")
     lth_mvrv = round(price / lth_rp, 4) if price and lth_rp else None
     sth_mvrv = round(price / ma30, 4)   if price and ma30   else None
- 
+
     all_data = {**cg, **cg_gl, **stable, **cm, **bgr, **bgr_h, **soso, **twelve,
                 **cm_ext, **pools, **puell, **altme, **cm_deep, **messari, **bnf, **wtm,
                 "mayer_multiple": mayer, "lth_realized_price_proxy": lth_rp,
                 "sth_realized_price_proxy": ma30, "lth_mvrv_proxy": lth_mvrv,
                 "sth_mvrv_proxy": sth_mvrv,
                 **mem, **bc, **cp, **fg, **cb, **kr_meta, **tech, **bci}
- 
+
     if not all_data.get("price_usd"):
         for fb in ["price_coinbase", "kraken_close", "altme_price", "messari_price"]:
             if all_data.get(fb):
                 all_data["price_usd"] = all_data[fb]
                 break
- 
+
     return {**all_data, **compute_signals(all_data), "updated_at": datetime.now(timezone.utc).isoformat()}
- 
- 
+
+
 @app.get("/api/derivatives")
 def get_derivatives():
     """Endpoint agrégé — Futures/Dérivés BTC (6 sources)"""
@@ -2368,8 +2368,8 @@ def get_derivatives():
         **oi_btc_sources,
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }
- 
- 
+
+
 @app.get("/api/defi")
 def get_defi():
     """Endpoint — DeFi Bitcoin Ecosystem TVL + Analytics"""
@@ -2380,10 +2380,3 @@ def get_defi():
         **defi, **messari, **cc,
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }
- 
-# ── Vercel handler (ASGI → WSGI via Mangum) ───────────────
-# Vercel @vercel/python uses WSGI. FastAPI is ASGI.
-# Mangum bridges them. Vercel looks for 'handler' in the module.
-from mangum import Mangum
-handler = Mangum(app, lifespan="off")
- 
