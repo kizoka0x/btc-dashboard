@@ -1,6 +1,10 @@
-""" BTC On-Chain Analytics API — v9.0.0 (Vercel Edition) Toutes les APIs BTC gratuites disponibles dans le monde — 70 sources.
+"""
+BTC On-Chain Analytics API — v9.0.0 (Vercel Edition)
+Toutes les APIs BTC gratuites disponibles dans le monde — 70 sources.
 
-Structure Vercel : ce fichier est servi comme serverless function. GET / → index.html GET /api/* → endpoints FastAPI
+Structure Vercel : ce fichier est servi comme serverless function.
+GET /         → index.html
+GET /api/*    → endpoints FastAPI
 
 APIs intégrées (sans clé) :
   EXCHANGES USD : CoinGecko, Binance, Coinbase, Kraken, Bitfinex, Bitstamp,
@@ -149,12 +153,10 @@ def fetch_fx():
     if now - _fx_cache["ts"] < FX_TTL and _fx_cache["data"]:
         return _fx_cache["data"]
 
-    # Taux USD→devises via exchangerate-api (sans clé, fiable)
     result = {}
     d_fx = get("https://api.exchangerate-api.com/v4/latest/USD", timeout=6)
     rates_raw = d_fx.get("rates", {}) if d_fx else {}
 
-    # Récupération prix BTC/USD depuis CoinGecko (ou cache)
     cg = get("https://api.coingecko.com/api/v3/simple/price", {
         "ids": "bitcoin",
         "vs_currencies": "usd"
@@ -163,20 +165,18 @@ def fetch_fx():
     if cg and cg.get("bitcoin", {}).get("usd"):
         btc_usd = cg["bitcoin"]["usd"]
 
-    # Fallback pour BTC/USD si CoinGecko rate-limité
     if not btc_usd and _cg_cache.get("data", {}).get("price_usd"):
         btc_usd = _cg_cache["data"]["price_usd"]
 
     result["btc_usd_cg"] = safe(btc_usd, 2) if btc_usd else None
 
-    # Construction des taux et prix BTC dans chaque devise
     currencies = {
         "jpy": "JPY", "krw": "KRW", "aud": "AUD", "brl": "BRL",
         "try": "TRY", "eur": "EUR", "gbp": "GBP",
         "zar": "ZAR", "mxn": "MXN", "inr": "INR", "idr": "IDR"
     }
     for cur_lower, cur_upper in currencies.items():
-        rate = rates_raw.get(cur_upper)  # 1 USD = rate devises
+        rate = rates_raw.get(cur_upper)
         if rate and float(rate) > 0:
             result[f"rate_{cur_lower}"] = round(float(rate), 6)
             if btc_usd:
@@ -394,10 +394,7 @@ def fetch_mempool():
                        "diff_remaining_blocks": safe(da.get("remainingBlocks"), 0),
                        "previous_retarget_pct": safe(da.get("previousRetarget"), 4)})
     ln = get("https://mempool.space/api/v1/lightning/statistics/latest")
-Exit code: 0
-
-Action: $ sed -n '401,900p' /app/vercel/main.py
-Observation: if ln:
+    if ln:
         l = ln.get("latest", {})
         result.update({"ln_channels": safe(l.get("channel_count"), 0),
                        "ln_nodes": safe(l.get("node_count"), 0),
@@ -462,7 +459,7 @@ def fetch_blockchair():
         "utxo_count":            safe(data.get("outputs"), 0),
         "blockchain_size_gb":    safe((data.get("blockchain_size") or 0) / 1e9, 2),
         "transactions_24h":      safe(data.get("transactions_24h"), 0),
-        "bc_vol_24h_sat":        safe(data.get("volume_24h"), 0),   # en satoshis
+        "bc_vol_24h_sat":        safe(data.get("volume_24h"), 0),
         "mempool_tps":           safe(data.get("mempool_tps"), 2),
     }
 
@@ -644,7 +641,7 @@ def fetch_mining_pools():
     return result
 
 # ══════════════════════════════════════════════════════════════
-# 1ML.COM — Lightning (alternative à Mempool)
+# 1ML.COM — Lightning
 # ══════════════════════════════════════════════════════════════
 def fetch_1ml():
     global _1ml_cache
@@ -669,7 +666,7 @@ def fetch_1ml():
         return _1ml_cache.get("data", {})
 
 # ══════════════════════════════════════════════════════════════
-# DEXSCREENER — WBTC on Ethereum (DEX)
+# DEXSCREENER — WBTC on Ethereum
 # ══════════════════════════════════════════════════════════════
 def fetch_dexscreener():
     global _dex_cache
@@ -894,13 +891,8 @@ def fetch_cryptodotcom():
     d = get("https://api.crypto.com/v2/public/get-ticker", {"instrument_name": "BTC_USDT"})
     if not d: return _cdotcom_cache.get("data", {})
     raw = d.get("result", {}).get("data")
-    # API returns either a dict or a list with one item
     data = raw[0] if isinstance(raw, list) and raw else (raw if isinstance(raw, dict) else {})
     chg = data.get("c")
-Exit code: 0
-
-Action: $ sed -n '900,1400p' /app/vercel/main.py
-Observation: chg = data.get("c")
     result = {
         "cdotcom_price": safe(data.get("a"), 2),
         "cdotcom_high_24h": safe(data.get("h"), 2),
@@ -1009,7 +1001,6 @@ def fetch_foxbit():
                          headers={"User-Agent": "btc-analytics/8.0"})
         if r.status_code != 200: return _foxbit_cache.get("data", {})
         d = r.json()
-        # Préférer la paire USD directe
         for item in d:
             if "XBT" in item.get("currency","") and "USDT" in item.get("currency",""):
                 result = {"foxbit_price_usd": safe(item.get("last"), 2),
@@ -1018,7 +1009,6 @@ def fetch_foxbit():
                 if result.get("foxbit_price_usd"):
                     _foxbit_cache = {"data": result, "ts": now}
                 return result
-        # Fallback paire BRL
         for item in d:
             if "XBT" in item.get("currency","") or "BTC" in item.get("currency",""):
                 fx = fetch_fx(); rate = fx.get("rate_brl")
@@ -1401,4 +1391,941 @@ def compute_signals(d):
         p = abs(ap)
         s["ath_signal"] = ("Proche ATH 🔴" if p < 5 else "Zone haute 🟡" if p < 20
                            else "Zone mediane 🟢" if p < 50 else "Zone basse 💜")
-Exit code: 0
+    s["mvrv_signal"] = (
+        "Surachat 🔴" if mvrv and mvrv >= 3.5 else "Chaud 🟡" if mvrv and mvrv >= 2.5
+        else "Neutre 🟢" if mvrv and mvrv >= 1.0 else "Sous-evalue 💜" if mvrv else "—")
+    s["nupl_zone"] = (
+        "Euphorie 🔴" if nupl and nupl >= 0.75 else "Avidite 🟡" if nupl and nupl >= 0.5
+        else "Optimisme 🟢" if nupl and nupl >= 0.25 else "Espoir 🟢" if nupl and nupl >= 0
+        else "Capitulation 💜" if nupl is not None else "—")
+    if asopr is not None:
+        s["asopr_signal"] = ("Profit 🟢" if asopr >= 1.02 else "Neutre 🟡" if asopr >= 0.98 else "Perte 🔴")
+    if rsi is not None:
+        s["rsi_signal"] = ("Surachat 🔴" if rsi >= 80 else "Haussier 🟡" if rsi >= 60
+                           else "Neutre 🟢" if rsi >= 40 else "Baissier 🟡" if rsi >= 20 else "Survente 💜")
+    sharpe = d.get("sharpe_30d")
+    if sharpe is not None:
+        s["sharpe_signal"] = ("Excellent ✅" if sharpe >= 2 else "Bon 🟢" if sharpe >= 1
+                              else "Positif 🟡" if sharpe >= 0 else "Negatif 🔴")
+    if fg is not None:
+        s["fg_signal"] = ("Peur extreme 💜" if fg <= 20 else "Peur 🟡" if fg <= 40
+                          else "Neutre 🟢" if fg <= 60 else "Avidite 🟡" if fg <= 80 else "Avidite extreme 🔴")
+    if fee is not None:
+        s["fee_signal"] = ("Reseau libre ✅" if fee <= 3 else "Normal" if fee <= 15
+                           else "Charge ⚠️" if fee <= 50 else "Congestionne 🔴")
+    if txs is not None:
+        s["mempool_signal"] = ("Vide ✅" if txs < 5000 else "Normal" if txs < 30000
+                               else "Charge ⚠️" if txs < 100000 else "Sature 🔴")
+    stable = d.get("stablecoin_total"); mcap = d.get("market_cap")
+    if stable and mcap:
+        ratio = stable / mcap * 100
+        s["stable_ratio_pct"] = round(ratio, 2)
+        s["stable_signal"] = ("Liquidite elevee 🟢" if ratio > 30 else "Liquidite normale 🟡" if ratio > 15 else "Liquidite faible 🔴")
+    alerts = []
+    if mvrv and mvrv >= 3.5:
+        alerts.append({"severity": "CRITIQUE", "metric": "MVRV", "message": f"MVRV={mvrv:.2f} — surachat extrême"})
+    if mvrv and mvrv < 1.0:
+        alerts.append({"severity": "OPPORTUNITÉ", "metric": "MVRV", "message": f"MVRV={mvrv:.2f} — sous Realized Cap"})
+    if fg is not None and fg <= 15:
+        alerts.append({"severity": "INFO", "metric": "Fear&Greed", "message": f"F&G={int(fg)} — peur extrême"})
+    if ap and abs(ap) < 5:
+        alerts.append({"severity": "ATTENTION", "metric": "ATH", "message": f"BTC à {abs(ap):.1f}% de l'ATH"})
+    if rsi and rsi >= 80:
+        alerts.append({"severity": "INFO", "metric": "RSI", "message": f"RSI={rsi:.1f} — surachat"})
+    if rsi and rsi <= 20:
+        alerts.append({"severity": "OPPORTUNITÉ", "metric": "RSI", "message": f"RSI={rsi:.1f} — survente"})
+    if asopr is not None and asopr < 0.96:
+        alerts.append({"severity": "INFO", "metric": "aSOPR", "message": f"aSOPR={asopr:.4f} — ventes à perte"})
+    s["alerts"] = alerts
+    s["active_alerts"] = len(alerts)
+    return s
+
+# ══════════════════════════════════════════════════════════════
+# NOUVELLES SOURCES v9 — DÉRIVÉS & FUTURES
+# ══════════════════════════════════════════════════════════════
+
+def fetch_binance_futures():
+    """Binance USDT-M Futures (FAPI) — Funding rate, OI, L/S ratio"""
+    global _bnf_cache
+    now = time.time()
+    if now - _bnf_cache["ts"] < 60 and _bnf_cache["data"]:
+        return _bnf_cache["data"]
+    result = {}
+    d = get("https://fapi.binance.com/fapi/v1/premiumIndex", {"symbol": "BTCUSDT"})
+    if d:
+        fr = d.get("lastFundingRate")
+        result.update({
+            "bnf_mark_price":   safe(d.get("markPrice"), 2),
+            "bnf_index_price":  safe(d.get("indexPrice"), 2),
+            "bnf_funding_rate": safe(float(fr)*100 if fr else None, 6),
+        })
+    d2 = get("https://fapi.binance.com/fapi/v1/openInterest", {"symbol": "BTCUSDT"})
+    if d2:
+        result["bnf_oi_btc"] = safe(d2.get("openInterest"), 2)
+    d3 = get("https://fapi.binance.com/fapi/v1/ticker/24hr", {"symbol": "BTCUSDT"})
+    if d3:
+        result.update({
+            "bnf_price":      safe(d3.get("lastPrice"), 2),
+            "bnf_vol_usd":    safe(d3.get("quoteVolume"), 0),
+            "bnf_change_24h": safe(d3.get("priceChangePercent"), 4),
+            "bnf_high_24h":   safe(d3.get("highPrice"), 2),
+            "bnf_low_24h":    safe(d3.get("lowPrice"), 2),
+        })
+    d4 = get("https://fapi.binance.com/fapi/v1/globalLongShortAccountRatio",
+             {"symbol": "BTCUSDT", "period": "5m", "limit": "1"})
+    if d4 and isinstance(d4, list) and d4:
+        row = d4[0]
+        ls = row.get("longShortRatio")
+        la = row.get("longAccount"); sa = row.get("shortAccount")
+        result.update({
+            "bnf_ls_ratio":  safe(ls, 4),
+            "bnf_long_pct":  safe(float(la)*100 if la else None, 2),
+            "bnf_short_pct": safe(float(sa)*100 if sa else None, 2),
+        })
+    if result.get("bnf_mark_price"):
+        _bnf_cache = {"data": result, "ts": now}
+    return result
+
+
+def fetch_kraken_futures():
+    """Kraken Futures — BTC Perpetual (PF_XBTUSD)"""
+    global _krf_cache
+    now = time.time()
+    if now - _krf_cache["ts"] < 60 and _krf_cache["data"]:
+        return _krf_cache["data"]
+    d = get("https://futures.kraken.com/derivatives/api/v3/tickers", timeout=10)
+    if not d or not d.get("tickers"):
+        return _krf_cache.get("data", {})
+    result = {}
+    for t in d["tickers"]:
+        sym = t.get("symbol", "")
+        if sym in ("PF_XBTUSD", "PI_XBTUSD"):
+            fr = t.get("fundingRate")
+            result.update({
+                "krf_symbol":        sym,
+                "krf_last_price":    safe(t.get("last"), 2),
+                "krf_mark_price":    safe(t.get("markPrice"), 2),
+                "krf_bid":           safe(t.get("bid"), 2),
+                "krf_ask":           safe(t.get("ask"), 2),
+                "krf_funding_rate":  safe(float(fr)*100 if fr else None, 6),
+                "krf_oi_contracts":  safe(t.get("openInterest"), 0),
+                "krf_vol_24h":       safe(t.get("vol24h"), 2),
+            })
+            break
+    if result:
+        _krf_cache = {"data": result, "ts": now}
+    return result
+
+
+def fetch_bitmex():
+    """BitMEX — XBTUSD Perpetual Swap"""
+    global _bitmex_cache
+    now = time.time()
+    if now - _bitmex_cache["ts"] < 60 and _bitmex_cache["data"]:
+        return _bitmex_cache["data"]
+    d = get("https://www.bitmex.com/api/v1/instrument", {
+        "symbol": "XBTUSD", "count": "1",
+        "columns": "symbol,lastPrice,markPrice,indicativeFundingRate,openInterest,turnover24h"
+    }, timeout=10)
+    if not d or not isinstance(d, list) or not d:
+        return _bitmex_cache.get("data", {})
+    row = d[0]
+    fr = row.get("indicativeFundingRate")
+    t24 = row.get("turnover24h")
+    result = {
+        "bitmex_last_price":   safe(row.get("lastPrice"), 2),
+        "bitmex_mark_price":   safe(row.get("markPrice"), 2),
+        "bitmex_funding_rate": safe(float(fr)*100 if fr else None, 6),
+        "bitmex_oi_contracts": safe(row.get("openInterest"), 0),
+        "bitmex_vol_24h_btc":  safe(float(t24)/1e8 if t24 else None, 2),
+    }
+    if result.get("bitmex_last_price"):
+        _bitmex_cache = {"data": result, "ts": now}
+    return result
+
+
+def fetch_hyperliquid():
+    """Hyperliquid — DEX Perpetuals BTC (sans clé)"""
+    global _hyper_cache
+    now = time.time()
+    if now - _hyper_cache["ts"] < 60 and _hyper_cache["data"]:
+        return _hyper_cache["data"]
+    try:
+        r = requests.post("https://api.hyperliquid.xyz/info",
+                          json={"type": "metaAndAssetCtxs"},
+                          headers={"Content-Type": "application/json",
+                                   "User-Agent": "btc-analytics/9.0"},
+                          timeout=10)
+        if r.status_code != 200:
+            return _hyper_cache.get("data", {})
+        data = r.json()
+        if not isinstance(data, list) or len(data) < 2:
+            return {}
+        meta = data[0].get("universe", [])
+        ctxs = data[1]
+        btc_idx = next((i for i, a in enumerate(meta) if a.get("name") == "BTC"), None)
+        if btc_idx is None or btc_idx >= len(ctxs):
+            return {}
+        btc = ctxs[btc_idx]
+        funding = btc.get("funding")
+        result = {
+            "hyper_mark_price":   safe(btc.get("markPx"), 2),
+            "hyper_mid_price":    safe(btc.get("midPx"), 2),
+            "hyper_funding_rate": safe(float(funding)*100 if funding else None, 6),
+            "hyper_oi_usd":       safe(btc.get("openInterest"), 0),
+            "hyper_vol_24h_usd":  safe(btc.get("dayNtlVlm"), 0),
+        }
+        if result.get("hyper_mark_price"):
+            _hyper_cache = {"data": result, "ts": now}
+        return result
+    except Exception as e:
+        log.warning(f"hyperliquid: {e}")
+        return _hyper_cache.get("data", {})
+
+
+def fetch_bitget_futures():
+    """Bitget USDT Futures — BTC Perpetual v9"""
+    global _bgf_cache
+    now = time.time()
+    if now - _bgf_cache["ts"] < 60 and _bgf_cache["data"]:
+        return _bgf_cache["data"]
+    d = get("https://api.bitget.com/api/v2/mix/market/ticker",
+            {"productType": "USDT-FUTURES", "symbol": "BTCUSDT"}, timeout=8)
+    if not d: return _bgf_cache.get("data", {})
+    data = (d.get("data") or [{}])[0]
+    fr = data.get("fundingRate")
+    result = {
+        "bgf_last_price":   safe(data.get("lastPr"), 2),
+        "bgf_mark_price":   safe(data.get("markPrice"), 2),
+        "bgf_index_price":  safe(data.get("indexPrice"), 2),
+        "bgf_funding_rate": safe(float(fr)*100 if fr else None, 6),
+        "bgf_oi_usd":       safe(data.get("holdingAmount"), 0),
+        "bgf_vol_usd":      safe(data.get("quoteVolume"), 0),
+        "bgf_change_24h":   safe(data.get("change24h"), 4),
+    }
+    if result.get("bgf_last_price"):
+        _bgf_cache = {"data": result, "ts": now}
+    return result
+
+
+def fetch_deribit_dvol():
+    """Deribit — Bitcoin Volatility Index (DVol)"""
+    global _dvol_cache
+    now = time.time()
+    if now - _dvol_cache["ts"] < 300 and _dvol_cache["data"]:
+        return _dvol_cache["data"]
+    d = get("https://www.deribit.com/api/v2/public/get_volatility_index_data", {
+        "currency": "BTC",
+        "start_timestamp": str(int((now - 7*86400)*1000)),
+        "end_timestamp": str(int(now*1000)),
+        "resolution": "3600"
+    }, timeout=10)
+    result = {}
+    if d and d.get("result", {}).get("data"):
+        rows = d["result"]["data"]
+        if rows:
+            latest = rows[-1]
+            result["deribit_dvol"] = safe(latest[4], 2) if len(latest) > 4 else None
+            prev = rows[-2] if len(rows) > 1 else None
+            if prev and result.get("deribit_dvol"):
+                prev_val = safe(prev[4], 2) if len(prev) > 4 else None
+                if prev_val:
+                    result["deribit_dvol_change"] = safe(result["deribit_dvol"] - prev_val, 2)
+    if result:
+        _dvol_cache = {"data": result, "ts": now}
+    return result
+
+
+def fetch_bitfinex_stats():
+    """Bitfinex Stats — Positions long/short BTC (gratuit)"""
+    global _bfxstats_cache
+    now = time.time()
+    if now - _bfxstats_cache["ts"] < 600 and _bfxstats_cache["data"]:
+        return _bfxstats_cache["data"]
+    result = {}
+    try:
+        r_long = requests.get(
+            "https://api-pub.bitfinex.com/v2/stats1/pos.size:1d:tBTCUSD:long/last",
+            timeout=8, headers={"User-Agent": "btc-analytics/9.0"})
+        if r_long.status_code == 200:
+            data = r_long.json()
+            if isinstance(data, list) and len(data) >= 2:
+                result["bfx_longs_btc"] = safe(data[1], 2)
+        r_short = requests.get(
+            "https://api-pub.bitfinex.com/v2/stats1/pos.size:1d:tBTCUSD:short/last",
+            timeout=8, headers={"User-Agent": "btc-analytics/9.0"})
+        if r_short.status_code == 200:
+            data = r_short.json()
+            if isinstance(data, list) and len(data) >= 2:
+                result["bfx_shorts_btc"] = safe(data[1], 2)
+        lg = result.get("bfx_longs_btc"); sh = result.get("bfx_shorts_btc")
+        if lg and sh and sh > 0:
+            result["bfx_ls_ratio"] = safe(lg / sh, 4)
+    except Exception as e:
+        log.warning(f"bfx_stats: {e}")
+    if result:
+        _bfxstats_cache = {"data": result, "ts": now}
+    return result
+
+
+# ══════════════════════════════════════════════════════════════
+# NOUVELLES SOURCES v9 — DEFI / TVL
+# ══════════════════════════════════════════════════════════════
+
+def fetch_defillama():
+    """DefiLlama — Bitcoin Ecosystem DeFi TVL"""
+    global _defillama_cache
+    now = time.time()
+    if now - _defillama_cache["ts"] < 3600 and _defillama_cache["data"]:
+        return _defillama_cache["data"]
+    result = {}
+    d = get("https://api.llama.fi/v2/chains", timeout=12)
+    if d and isinstance(d, list):
+        for chain in d:
+            if chain.get("name", "").lower() == "bitcoin":
+                result["btc_chain_tvl_usd"] = safe(chain.get("tvl"), 0)
+                break
+    try:
+        r_wbtc = requests.get("https://api.llama.fi/tvl/wbtc", timeout=10,
+                               headers={"User-Agent": "btc-analytics/9.0"})
+        if r_wbtc.status_code == 200:
+            result["wbtc_tvl_usd"] = safe(float(r_wbtc.text.strip()), 0)
+    except: pass
+    try:
+        r_tbtc = requests.get("https://api.llama.fi/tvl/tbtc", timeout=10,
+                               headers={"User-Agent": "btc-analytics/9.0"})
+        if r_tbtc.status_code == 200:
+            result["tbtc_tvl_usd"] = safe(float(r_tbtc.text.strip()), 0)
+    except: pass
+    try:
+        r_bab = requests.get("https://api.llama.fi/tvl/babylon-protocol", timeout=10,
+                              headers={"User-Agent": "btc-analytics/9.0"})
+        if r_bab.status_code == 200:
+            result["babylon_tvl_usd"] = safe(float(r_bab.text.strip()), 0)
+    except: pass
+    try:
+        r_lom = requests.get("https://api.llama.fi/tvl/lombard-lbtc", timeout=10,
+                              headers={"User-Agent": "btc-analytics/9.0"})
+        if r_lom.status_code == 200:
+            result["lombard_tvl_usd"] = safe(float(r_lom.text.strip()), 0)
+    except: pass
+    if result:
+        _defillama_cache = {"data": result, "ts": now}
+    return result
+
+
+# ══════════════════════════════════════════════════════════════
+# NOUVELLES SOURCES v9 — ANALYTICS
+# ══════════════════════════════════════════════════════════════
+
+def fetch_cryptocompare():
+    """OKX Klines — Historique OHLCV 30 jours"""
+    global _cc_cache
+    now = time.time()
+    if now - _cc_cache["ts"] < 86400 and _cc_cache["data"]:
+        return _cc_cache["data"]
+    try:
+        d = get("https://www.okx.com/api/v5/market/candles",
+                {"instId": "BTC-USDT", "bar": "1D", "limit": "30"}, timeout=12)
+        if not d or not d.get("data"):
+            return _cc_cache.get("data", {})
+        candles = d["data"]
+        if not candles:
+            return {}
+        latest = candles[0]
+        closes  = [float(c[4]) for c in candles]
+        volumes = [float(c[6]) for c in candles]
+        history = [{"date": datetime.fromtimestamp(int(c[0])/1000).strftime("%Y-%m-%d"),
+                    "close": round(float(c[4]), 2)} for c in reversed(candles)]
+        result = {
+            "cc_open":        safe(latest[1], 2),
+            "cc_high":        safe(latest[2], 2),
+            "cc_low":         safe(latest[3], 2),
+            "cc_close":       safe(latest[4], 2),
+            "cc_vol_usd_24h": safe(latest[6], 0),
+            "cc_avg_vol_30d": safe(sum(volumes) / len(volumes), 0),
+            "cc_high_30d":    safe(max(closes), 2),
+            "cc_low_30d":     safe(min(closes), 2),
+            "cc_history_30d": history,
+            "cc_source":      "OKX Daily Klines",
+        }
+        if result.get("cc_close"):
+            _cc_cache = {"data": result, "ts": now}
+        return result
+    except Exception as e:
+        log.warning(f"cc_hist: {e}")
+        return _cc_cache.get("data", {})
+
+
+def fetch_messari():
+    """CoinPaprika Extended — Métriques BTC (remplace Messari tier gratuit)"""
+    global _messari_cache
+    now = time.time()
+    if now - _messari_cache["ts"] < 3600 and _messari_cache["data"]:
+        return _messari_cache["data"]
+    d = get("https://api.coinpaprika.com/v1/tickers/btc-bitcoin", timeout=10)
+    if not d or not d.get("quotes"):
+        return _messari_cache.get("data", {})
+    usd = d["quotes"].get("USD", {})
+    result = {
+        "messari_price":          safe(usd.get("price"), 2),
+        "messari_vol_24h":        safe(usd.get("volume_24h"), 0),
+        "messari_real_vol_24h":   safe(usd.get("volume_24h"), 0),
+        "messari_market_cap":     safe(usd.get("market_cap"), 0),
+        "messari_ath_price":      safe(usd.get("ath_price"), 2),
+        "messari_pct_from_ath":   safe(usd.get("percent_from_price_ath"), 2),
+        "messari_chg_7d":         safe(usd.get("percent_change_7d"), 2),
+        "messari_chg_30d":        safe(usd.get("percent_change_30d"), 2),
+        "messari_chg_1y":         safe(usd.get("percent_change_1y"), 2),
+        "messari_supply_mined":   safe(d.get("total_supply"), 0),
+        "messari_max_supply":     safe(d.get("max_supply"), 0),
+        "messari_btc_txns_24h":   None,
+        "messari_active_addr":    None,
+        "messari_stock_to_flow":  None,
+    }
+    ts = d.get("total_supply"); ms = d.get("max_supply")
+    if ts and ms and ms > 0:
+        result["messari_supply_pct"] = safe(float(ts) / float(ms) * 100, 2)
+    if result.get("messari_price"):
+        _messari_cache = {"data": result, "ts": now}
+    return result
+
+
+def fetch_whattomine():
+    """WhatToMine — Profitabilité Mining BTC"""
+    global _wtm_cache
+    now = time.time()
+    if now - _wtm_cache["ts"] < 3600 and _wtm_cache["data"]:
+        return _wtm_cache["data"]
+    d = get("https://whattomine.com/coins/1.json", timeout=12)
+    if not d:
+        return _wtm_cache.get("data", {})
+    result = {
+        "wtm_btc_profitability": safe(d.get("profitability"), 2),
+        "wtm_btc_nethash_th":    safe(d.get("nethash"), 2),
+        "wtm_btc_difficulty":    safe(d.get("difficulty"), 0),
+        "wtm_btc_block_reward":  safe(d.get("block_reward"), 4),
+        "wtm_btc_block_time":    safe(d.get("block_time"), 2),
+        "wtm_btc_last_block":    safe(d.get("last_block"), 0),
+        "wtm_btc_exchange_rate": safe(d.get("exchange_rate"), 2),
+    }
+    if result.get("wtm_btc_block_reward"):
+        _wtm_cache = {"data": result, "ts": now}
+    return result
+
+
+def fetch_coinmetrics_deep():
+    """CoinMetrics Community — AdrActCnt, HashRate, PriceUSD"""
+    global _cm_deep_cache
+    now = time.time()
+    if now - _cm_deep_cache["ts"] < 3600 and _cm_deep_cache["data"]:
+        return _cm_deep_cache["data"]
+    result = {}
+    d1 = get("https://community-api.coinmetrics.io/v4/timeseries/asset-metrics",
+             {"assets": "btc", "metrics": "AdrActCnt", "page_size": "1", "paging_from": "end"},
+             timeout=12)
+    if d1 and d1.get("data"):
+        row = d1["data"][-1]
+        result["cm_active_addresses"] = safe(row.get("AdrActCnt"), 0)
+    d2 = get("https://community-api.coinmetrics.io/v4/timeseries/asset-metrics",
+             {"assets": "btc", "metrics": "HashRate", "page_size": "1", "paging_from": "end"},
+             timeout=12)
+    if d2 and d2.get("data"):
+        row = d2["data"][-1]
+        hr = row.get("HashRate")
+        result["cm_hashrate_ths"] = safe(hr, 2)
+        if hr:
+            result["cm_hashrate_eh"] = safe(float(hr) / 1e6, 2)
+    d3 = get("https://community-api.coinmetrics.io/v4/timeseries/asset-metrics",
+             {"assets": "btc", "metrics": "PriceUSD", "page_size": "1", "paging_from": "end"},
+             timeout=12)
+    if d3 and d3.get("data"):
+        row = d3["data"][-1]
+        result["cm_price_usd"] = safe(row.get("PriceUSD"), 2)
+        result["cm_deep_date"] = row.get("time", "")[:10]
+    result["cm_nvt_adj"] = None
+    result["cm_sply_act_1yr_btc"] = None
+    result["cm_tx_tfr_val_adj_usd"] = None
+    result["cm_supply_current"] = None
+    result["cm_difficulty_mean"] = None
+    if result.get("cm_active_addresses"):
+        _cm_deep_cache = {"data": result, "ts": now}
+    return result
+
+
+def fetch_mempool_blocks():
+    """Mempool.space — Derniers blocs minés"""
+    global _mempool_deep_cache
+    now = time.time()
+    if now - _mempool_deep_cache["ts"] < 120 and _mempool_deep_cache["data"]:
+        return _mempool_deep_cache["data"]
+    d = get("https://mempool.space/api/v1/blocks", timeout=10)
+    if not d or not isinstance(d, list) or not d:
+        return _mempool_deep_cache.get("data", {})
+    last = d[0]
+    result = {
+        "last_block_height":  safe(last.get("height"), 0),
+        "last_block_txcount": safe(last.get("tx_count"), 0),
+        "last_block_size_kb": safe((last.get("size") or 0) / 1024, 1),
+        "last_block_weight":  safe(last.get("weight"), 0),
+        "last_block_ts":      last.get("timestamp"),
+        "last_block_median_fee_rate": safe(last.get("extras", {}).get("medianFee"), 1),
+        "last_block_pool": last.get("extras", {}).get("pool", {}).get("name", "Unknown"),
+    }
+    if len(d) >= 10:
+        avg_tx = sum(b.get("tx_count", 0) for b in d[:10]) / 10
+        avg_size = sum((b.get("size") or 0) for b in d[:10]) / 10 / 1024
+        result["blocks_avg_tx_count"] = round(avg_tx, 0)
+        result["blocks_avg_size_kb"] = round(avg_size, 1)
+    if result:
+        _mempool_deep_cache = {"data": result, "ts": now}
+    return result
+
+
+def fetch_blockchain_charts():
+    """Blockchain.info Charts API — Hashrate & Transactions historique"""
+    global _bcinfo_chart_cache
+    now = time.time()
+    if now - _bcinfo_chart_cache["ts"] < 3600 and _bcinfo_chart_cache["data"]:
+        return _bcinfo_chart_cache["data"]
+    result = {}
+    d1 = get("https://api.blockchain.info/charts/hash-rate",
+             {"timespan": "30days", "format": "json", "sampled": "true"}, timeout=12)
+    if d1 and d1.get("values"):
+        vals = [v["y"] for v in d1["values"] if v.get("y")]
+        if vals:
+            result["bchart_hashrate_now_eh"] = safe(vals[-1] / 1e6, 2)
+            result["bchart_hashrate_30d_avg_eh"] = safe(sum(vals)/len(vals)/1e6, 2)
+            result["bchart_hashrate_history"] = [
+                {"date": datetime.fromtimestamp(v["x"]).strftime("%Y-%m-%d"),
+                 "eh": round(v["y"]/1e6, 2)} for v in d1["values"][-30:]
+            ]
+    d2 = get("https://api.blockchain.info/charts/n-transactions",
+             {"timespan": "30days", "format": "json", "sampled": "true"}, timeout=12)
+    if d2 and d2.get("values"):
+        vals = [v["y"] for v in d2["values"] if v.get("y")]
+        if vals:
+            result["bchart_txcount_today"] = safe(vals[-1], 0)
+            result["bchart_txcount_30d_avg"] = safe(sum(vals)/len(vals), 0)
+    d3 = get("https://api.blockchain.info/charts/transaction-fees-usd",
+             {"timespan": "7days", "format": "json", "sampled": "true"}, timeout=12)
+    if d3 and d3.get("values"):
+        vals = [v["y"] for v in d3["values"] if v.get("y")]
+        if vals:
+            result["bchart_fees_usd_today"] = safe(vals[-1], 2)
+    if result:
+        _bcinfo_chart_cache = {"data": result, "ts": now}
+    return result
+
+
+# ══════════════════════════════════════════════════════════════
+# PAGE HTML
+# ══════════════════════════════════════════════════════════════
+@app.get("/", response_class=HTMLResponse)
+async def serve_index():
+    html_path = Path(__file__).parent / "index.html"
+    if html_path.exists():
+        return HTMLResponse(content=html_path.read_text(encoding="utf-8"))
+    return HTMLResponse("<h1>index.html not found</h1>", status_code=404)
+
+# ══════════════════════════════════════════════════════════════
+# ENDPOINTS API
+# ══════════════════════════════════════════════════════════════
+
+@app.get("/api/health")
+def health():
+    now = time.time()
+    def age(ts): return round(now - ts, 0) if ts and ts > 0 else None
+    return {
+        "status": "ok", "service": "BTC Analytics API — 70 APIs", "version": "9.0.0",
+        "total_apis": 70,
+        "apis_par_categorie": {
+            "exchanges_usd": 28, "exchanges_intl": 19, "dex_onchain": 1,
+            "on_chain": 7, "historique": 1, "sentiment": 1, "lightning": 2,
+            "mining_stats": 2, "etf": 2, "derivatives": 6,
+            "defi_tvl": 1, "analytics": 2
+        },
+        "env_keys": {"SOSOVALUE_KEY": bool(os.environ.get("SOSOVALUE_KEY")),
+                     "TWELVE_DATA_KEY": bool(os.environ.get("TWELVE_DATA_KEY"))},
+        "cache_ages": {k: age(v["ts"]) for k, v in {
+            "cg": _cg_cache, "cb": _cb_cache, "fx": _fx_cache, "ex": _ex_cache,
+            "bgr": _bgr_cache, "bgr_h": _bgr_holders_cache, "cm_ext": _cm_ext_cache,
+            "puell": _puell_cache, "pools": _pools_cache, "1ml": _1ml_cache,
+            "dex": _dex_cache, "stooq": _stooq_cache, "intl": _intl_cache,
+            "soso": _soso_cache, "twelve": _twelve_cache,
+            "bnf": _bnf_cache, "krf": _krf_cache, "bitmex": _bitmex_cache,
+            "hyper": _hyper_cache, "bgf": _bgf_cache, "defillama": _defillama_cache,
+            "messari": _messari_cache, "cc": _cc_cache, "wtm": _wtm_cache,
+        }.items()},
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+@app.get("/api/exchanges")
+def get_exchanges():
+    """28 exchanges USD + DEX WBTC + spread arbitrage"""
+    global _ex_cache
+    now = time.time()
+    if now - _ex_cache["ts"] < EX_TTL and _ex_cache["data"]:
+        return _ex_cache["data"]
+
+    cg = fetch_coingecko(); cb = fetch_coinbase()
+    kr_meta, _ = fetch_kraken_ohlc()
+    bn = sf(fetch_binance); bfx = sf(fetch_bitfinex); bst = sf(fetch_bitstamp)
+    okx = sf(fetch_okx); byb = sf(fetch_bybit); gem = sf(fetch_gemini)
+    kuc = sf(fetch_kucoin); gate = sf(fetch_gate_io); htx = sf(fetch_htx)
+    mexc = sf(fetch_mexc); bitget = sf(fetch_bitget); coinex = sf(fetch_coinex)
+    lbank = sf(fetch_lbank); wb = sf(fetch_whitebit); cap = sf(fetch_coincap)
+    der = sf(fetch_deribit); cp = sf(fetch_coinpaprika); dex = sf(fetch_dexscreener)
+    pol = sf(fetch_poloniex); cdc = sf(fetch_cryptodotcom)
+    bmt = sf(fetch_bitmart); bts = sf(fetch_btse)
+    clr = sf(fetch_coinlore); crk = sf(fetch_coinranking)
+    xtc = sf(fetch_xtcom)
+
+    prices_raw = {
+        "CoinGecko": cg.get("price_usd"), "Binance": bn.get("binance_price"),
+        "Bitfinex": bfx.get("bitfinex_price"), "Bitstamp": bst.get("bitstamp_price"),
+        "OKX": okx.get("okx_price"), "Bybit": byb.get("bybit_price"),
+        "Gemini": gem.get("gemini_price"), "KuCoin": kuc.get("kucoin_price"),
+        "Gate.io": gate.get("gate_price"), "HTX": htx.get("htx_price"),
+        "MEXC": mexc.get("mexc_price"), "Bitget": bitget.get("bitget_price"),
+        "CoinEx": coinex.get("coinex_price"), "LBank": lbank.get("lbank_price"),
+        "WhiteBit": wb.get("whitebit_price"), "CoinCap": cap.get("coincap_price"),
+        "Deribit": der.get("deribit_index_price"), "Coinbase": cb.get("price_coinbase"),
+        "Kraken": kr_meta.get("kraken_close"), "CoinPaprika": cp.get("price_coinpaprika"),
+        "WBTC DEX": dex.get("dex_wbtc_price_usd"),
+        "Poloniex": pol.get("poloniex_price"), "Crypto.com": cdc.get("cdotcom_price"),
+        "BitMart": bmt.get("bitmart_price"), "BTSE": bts.get("btse_price"),
+        "CoinLore": clr.get("coinlore_price"), "CoinRanking": crk.get("coinranking_price"),
+        "XT.com": xtc.get("xtcom_price"),
+    }
+    valid = {k: float(v) for k, v in prices_raw.items() if v is not None}
+    avg_p = round(sum(valid.values()) / len(valid), 2) if valid else None
+    spread_pct = None; max_ex = None; min_ex = None
+    if len(valid) >= 2:
+        max_p = max(valid.values()); min_p = min(valid.values())
+        spread_pct = round((max_p - min_p) / min_p * 100, 4) if min_p > 0 else None
+        max_ex = max(valid, key=valid.get); min_ex = min(valid, key=valid.get)
+
+    exchange_list = [{"name": k, "price": v,
+                      "diff_avg": round((v - avg_p) / avg_p * 100, 4) if avg_p else None}
+                     for k, v in sorted(valid.items(), key=lambda x: x[1], reverse=True)]
+
+    result = {
+        "exchange_prices": exchange_list, "exchange_count": len(valid),
+        "avg_price": avg_p, "arbitrage_spread_pct": spread_pct,
+        "highest_exchange": max_ex, "lowest_exchange": min_ex,
+        **bn, **bfx, **bst, **okx, **byb, **gem, **kuc, **gate, **htx,
+        **mexc, **bitget, **coinex, **lbank, **wb, **cap, **der, **dex,
+        **pol, **cdc, **bmt, **bts, **clr, **crk, **xtc,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+    _ex_cache = {"data": result, "ts": now}
+    return result
+
+
+@app.get("/api/international")
+def get_international():
+    """19 exchanges internationaux (JP, KR, AU, TR, BR, RU, ZA, MX, IN, ID) avec conversion USD"""
+    return {**fetch_international(), "updated_at": datetime.now(timezone.utc).isoformat()}
+
+
+@app.get("/api/fx")
+def get_fx():
+    """Taux de change BTC dans les principales devises mondiales"""
+    return {**fetch_fx(), "updated_at": datetime.now(timezone.utc).isoformat()}
+
+
+@app.get("/api/onchain")
+def get_onchain():
+    cg = sf(fetch_coingecko); cm = sf(fetch_coinmetrics); bgr = sf(fetch_bgeometrics)
+    fg = sf(fetch_fear_greed); cm_ext = sf(fetch_coinmetrics_extended); puell = sf(fetch_puell_multiple)
+    cm_deep = sf(fetch_coinmetrics_deep); bfxst = sf(fetch_bitfinex_stats)
+    kr_meta, ohlc = fetch_kraken_ohlc()
+    tech = compute_technicals(ohlc)
+    price = cg.get("price_usd"); ma200 = tech.get("ma_200d")
+    mayer = round(price / ma200, 4) if price and ma200 and ma200 > 0 else None
+    all_data = {**cg, **cm, **bgr, **fg, **cm_ext, **puell, **tech, **kr_meta,
+                **cm_deep, **bfxst, "mayer_multiple": mayer}
+    if not all_data.get("price_usd"):
+        all_data["price_usd"] = sf(fetch_coinbase).get("price_coinbase")
+    return {**all_data, **compute_signals(all_data), "updated_at": datetime.now(timezone.utc).isoformat()}
+
+
+@app.get("/api/network")
+def get_network():
+    return {**sf(fetch_blockchair), **sf(fetch_mempool), **sf(fetch_blockchain_info),
+            **sf(fetch_blockchain_query), **sf(fetch_blockstream), **sf(fetch_bitnodes),
+            **sf(fetch_mining_pools), **sf(fetch_coinpaprika_ohlcv),
+            **sf(fetch_mempool_blocks), **sf(fetch_blockchain_charts), **sf(fetch_whattomine),
+            "updated_at": datetime.now(timezone.utc).isoformat()}
+
+
+@app.get("/api/lightning")
+def get_lightning():
+    mem = sf(fetch_mempool); ml = sf(fetch_1ml)
+    cg = sf(fetch_coingecko)
+    price = cg.get("price_usd") or sf(fetch_coinbase).get("price_coinbase")
+    cap = mem.get("ln_capacity_btc")
+    return {**{k: mem.get(k) for k in ["ln_channels","ln_nodes","ln_capacity_btc","ln_avg_capacity_sat"]},
+            **ml, "ln_capacity_usd": round(cap * price, 0) if cap and price else None,
+            "updated_at": datetime.now(timezone.utc).isoformat()}
+
+
+@app.get("/api/market")
+def get_market():
+    cg = sf(fetch_coingecko); cg_gl = sf(fetch_coingecko_global); stable = sf(fetch_stablecoins)
+    cp = sf(fetch_coinpaprika); cb = sf(fetch_coinbase); kr_meta, ohlc = fetch_kraken_ohlc()
+    tech = compute_technicals(ohlc); altme = sf(fetch_altme_ticker)
+    all_data = {**cg, **cg_gl, **stable, **cp, **cb, **kr_meta, **tech, **altme}
+    if not all_data.get("price_usd"):
+        all_data["price_usd"] = all_data.get("price_coinbase") or all_data.get("kraken_close")
+    return {**all_data, **compute_signals(all_data), "updated_at": datetime.now(timezone.utc).isoformat()}
+
+
+@app.get("/api/etf")
+def get_etf():
+    soso = sf(fetch_sosovalue_etf); twelve = sf(fetch_twelvedata_etf)
+    merged = {**soso, **twelve}
+    if not merged:
+        return {"note": "Clés SOSOVALUE_KEY et TWELVE_DATA_KEY configurées dans env",
+                "sosovalue_key_set": bool(os.environ.get("SOSOVALUE_KEY")),
+                "twelvedata_key_set": bool(os.environ.get("TWELVE_DATA_KEY")),
+                "updated_at": datetime.now(timezone.utc).isoformat()}
+    return {**merged, "updated_at": datetime.now(timezone.utc).isoformat()}
+
+
+@app.get("/api/stooq")
+def get_stooq():
+    return {**sf(fetch_stooq_history), "updated_at": datetime.now(timezone.utc).isoformat()}
+
+
+@app.get("/api/alerts")
+def get_alerts():
+    cg = sf(fetch_coingecko); cm = sf(fetch_coinmetrics); bgr = sf(fetch_bgeometrics)
+    fg = sf(fetch_fear_greed); kr_meta, ohlc = fetch_kraken_ohlc(); tech = compute_technicals(ohlc)
+    return compute_signals({**cg, **cm, **bgr, **fg, **tech, **kr_meta}).get("alerts", [])
+
+
+@app.get("/api/sources")
+def get_sources():
+    """Catalogue complet des 70 APIs gratuites intégrées"""
+    return {
+        "total_apis": 70,
+        "version": "9.0.0",
+        "categories": {
+            "exchanges_usd": {
+                "count": 28,
+                "sources": [
+                    {"name":"CoinGecko","url":"coingecko.com","key":False,"data":"Prix, OHLCV, Market Cap, Dominance"},
+                    {"name":"Binance","url":"binance.com","key":False,"data":"Prix, Volume, Variation 24h, High/Low"},
+                    {"name":"Coinbase","url":"coinbase.com","key":False,"data":"Prix spot BTC/USD"},
+                    {"name":"Kraken","url":"kraken.com","key":False,"data":"OHLC 400j, VWAP"},
+                    {"name":"Bitfinex","url":"bitfinex.com","key":False,"data":"Prix, Bid/Ask, Volume"},
+                    {"name":"Bitstamp","url":"bitstamp.net","key":False,"data":"Prix, Bid/Ask, Volume"},
+                    {"name":"OKX","url":"okx.com","key":False,"data":"Prix, Volume USD"},
+                    {"name":"Bybit","url":"bybit.com","key":False,"data":"Prix, Volume, Variation"},
+                    {"name":"Gemini","url":"gemini.com","key":False,"data":"Prix, Bid/Ask, Volume"},
+                    {"name":"KuCoin","url":"kucoin.com","key":False,"data":"Ticker 24h complet"},
+                    {"name":"Gate.io","url":"gate.io","key":False,"data":"Prix, Volume, %Change"},
+                    {"name":"HTX (Huobi)","url":"htx.com","key":False,"data":"Prix OHLCV"},
+                    {"name":"MEXC","url":"mexc.com","key":False,"data":"Prix, Volume, Variation 24h"},
+                    {"name":"Bitget","url":"bitget.com","key":False,"data":"Prix, Volume, Variation"},
+                    {"name":"CoinEx","url":"coinex.com","key":False,"data":"Prix, OHLCV"},
+                    {"name":"LBank","url":"lbank.info","key":False,"data":"Prix, High, Low"},
+                    {"name":"WhiteBit","url":"whitebit.com","key":False,"data":"Prix, Volume"},
+                    {"name":"CoinCap","url":"coincap.io","key":False,"data":"Prix, Supply, VWAP"},
+                    {"name":"Deribit","url":"deribit.com","key":False,"data":"Index, Perpétuel, Funding, OI"},
+                    {"name":"CoinPaprika","url":"coinpaprika.com","key":False,"data":"Prix, Beta, OHLCV"},
+                    {"name":"WBTC DEX","url":"dexscreener.com","key":False,"data":"Prix Uniswap/Ethereum, Liquidité"},
+                    {"name":"Poloniex","url":"poloniex.com","key":False,"data":"Prix, Volume, High/Low"},
+                    {"name":"Crypto.com","url":"crypto.com","key":False,"data":"Prix, Volume, High/Low"},
+                    {"name":"BitMart","url":"bitmart.com","key":False,"data":"Prix, Volume, Variation"},
+                    {"name":"BTSE","url":"btse.com","key":False,"data":"Prix last, Index price"},
+                    {"name":"CoinLore","url":"coinlore.net","key":False,"data":"Prix, Market Cap, Volume, Rang"},
+                    {"name":"CoinRanking","url":"coinranking.com","key":False,"data":"Prix BTC en temps réel"},
+                    {"name":"XT.com","url":"xt.com","key":False,"data":"Prix, Volume, High/Low BTC/USDT"},
+                ]
+            },
+            "exchanges_international": {
+                "count": 19,
+                "sources": [
+                    {"name":"bitFlyer","url":"bitflyer.com","key":False,"country":"JP","data":"BTC/JPY Prix, Volume, Bid/Ask"},
+                    {"name":"Coincheck","url":"coincheck.com","key":False,"country":"JP","data":"BTC/JPY Prix, Volume"},
+                    {"name":"Zaif","url":"zaif.jp","key":False,"country":"JP","data":"BTC/JPY Prix, VWAP"},
+                    {"name":"Upbit","url":"upbit.com","key":False,"country":"KR","data":"BTC/KRW Prix, Volume 24h"},
+                    {"name":"Bithumb","url":"bithumb.com","key":False,"country":"KR","data":"BTC/KRW Prix, High/Low"},
+                    {"name":"Korbit","url":"korbit.co.kr","key":False,"country":"KR","data":"BTC/KRW Prix"},
+                    {"name":"BTCMarkets","url":"btcmarkets.net","key":False,"country":"AU","data":"BTC/AUD Prix, Bid/Ask"},
+                    {"name":"BtcTurk","url":"btcturk.com","key":False,"country":"TR","data":"BTC/USDT Prix, Volume"},
+                    {"name":"Paribu","url":"paribu.com","key":False,"country":"TR","data":"BTC/TRY Prix"},
+                    {"name":"Mercado Bitcoin","url":"mercadobitcoin.net","key":False,"country":"BR","data":"BTC/BRL Prix, Volume"},
+                    {"name":"Foxbit","url":"foxbit.com.br","key":False,"country":"BR","data":"BTC/BRL Prix, High/Low"},
+                    {"name":"NovaDax","url":"novadax.com","key":False,"country":"BR","data":"BTC/BRL Prix, Volume"},
+                    {"name":"Exmo","url":"exmo.com","key":False,"country":"RU","data":"BTC/USD Prix, Volume"},
+                    {"name":"Luno","url":"luno.com","key":False,"country":"ZA","data":"BTC/ZAR Prix, Bid/Ask, Volume"},
+                    {"name":"VALR","url":"valr.com","key":False,"country":"ZA","data":"BTC/ZAR Prix, Bid/Ask"},
+                    {"name":"Bitso","url":"bitso.com","key":False,"country":"MX","data":"BTC/MXN Prix, Volume, Bid/Ask"},
+                    {"name":"CoinDCX","url":"coindcx.com","key":False,"country":"IN","data":"BTC/INR Prix, Volume, High/Low"},
+                    {"name":"WazirX","url":"wazirx.com","key":False,"country":"IN","data":"BTC/INR Prix, Volume"},
+                    {"name":"Indodax","url":"indodax.com","key":False,"country":"ID","data":"BTC/IDR Prix, Volume, High/Low"},
+                ]
+            },
+            "on_chain": {
+                "count": 7,
+                "sources": [
+                    {"name":"CoinMetrics Community","url":"coinmetrics.io","key":False,"data":"MVRV, Realized Cap, NUPL, Flux exchanges, ROI, Puell"},
+                    {"name":"BGR bitcoin-data.com","url":"bitcoin-data.com","key":False,"data":"aSOPR, SOPR, NRPL USD/BTC, Whales >1000 BTC"},
+                    {"name":"Mempool.space","url":"mempool.space","key":False,"data":"Fees, Hashrate, Difficulté, Blocks, Lightning"},
+                    {"name":"Blockchair","url":"blockchair.com","key":False,"data":"Blockchain stats, UTXOs, Taille, TPS"},
+                    {"name":"Blockchain.info","url":"blockchain.info","key":False,"data":"Stats globales, Supply, Hash, Miners revenue, Pools"},
+                    {"name":"Blockstream.info","url":"blockstream.info","key":False,"data":"Hauteur bloc, Mempool count"},
+                    {"name":"Bitnodes.io","url":"bitnodes.io","key":False,"data":"Nœuds P2P Bitcoin dans le monde"},
+                ]
+            },
+            "lightning": {
+                "count": 2,
+                "sources": [
+                    {"name":"Mempool.space Lightning","url":"mempool.space","key":False,"data":"Canaux, Nœuds, Capacité BTC/USD, Capacité moy/canal"},
+                    {"name":"1ML.com","url":"1ml.com","key":False,"data":"Nœuds, Canaux, Variations 30j"},
+                ]
+            },
+            "sentiment": {
+                "count": 1,
+                "sources": [
+                    {"name":"Alternative.me","url":"alternative.me","key":False,"data":"Fear & Greed Index 7j + Ticker BTC"},
+                ]
+            },
+            "historical": {
+                "count": 2,
+                "sources": [
+                    {"name":"Stooq","url":"stooq.com","key":False,"data":"Cours historique 30j CSV, High/Low 30j"},
+                    {"name":"CryptoCompare","url":"cryptocompare.com","key":False,"data":"OHLCV 30j, Volume moyen, High/Low 30j"},
+                ]
+            },
+            "etf_finance": {
+                "count": 2,
+                "sources": [
+                    {"name":"SoSoValue","url":"sosovalue.xyz","key":True,"data":"AUM total ETF, Flux nets jour/cumulé, BTC détenus"},
+                    {"name":"TwelveData","url":"twelvedata.com","key":True,"data":"Prix ETF IBIT, FBTC, ARKB, GBTC, HODL + volumes"},
+                ]
+            },
+            "derivatives": {
+                "count": 6,
+                "sources": [
+                    {"name":"Binance FAPI","url":"fapi.binance.com","key":False,"data":"BTC-Perp: Funding rate, OI en BTC, Ratio Long/Short, Mark price"},
+                    {"name":"Kraken Futures","url":"futures.kraken.com","key":False,"data":"PF_XBTUSD: Funding rate, OI, Mark price, Bid/Ask"},
+                    {"name":"BitMEX","url":"bitmex.com","key":False,"data":"XBTUSD: Funding rate, OI en contrats, Volume 24h BTC"},
+                    {"name":"Hyperliquid DEX","url":"api.hyperliquid.xyz","key":False,"data":"BTC Perp décentralisé: Funding rate, OI USD, Volume 24h"},
+                    {"name":"Bitget Futures","url":"api.bitget.com","key":False,"data":"BTC USDT-Futures: Funding rate, OI USD, Mark/Index price"},
+                    {"name":"Deribit DVol","url":"deribit.com","key":False,"data":"Bitcoin Volatility Index (DVol) — IV implicite options BTC"},
+                ]
+            },
+            "defi_tvl": {
+                "count": 1,
+                "sources": [
+                    {"name":"DefiLlama","url":"llama.fi","key":False,"data":"TVL Bitcoin chain, WBTC/tBTC/Babylon/Lombard TVL par protocole"},
+                ]
+            },
+            "analytics": {
+                "count": 2,
+                "sources": [
+                    {"name":"CoinPaprika Extended","url":"coinpaprika.com","key":False,"data":"ATH, %depuis ATH, Variations 7j/30j/1an, Market cap, Volume, Supply minée"},
+                    {"name":"Bitfinex Stats","url":"bitfinex.com","key":False,"data":"Positions Long/Short BTCUSD sur Bitfinex + ratio L/S"},
+                ]
+            },
+            "mining_stats": {
+                "count": 2,
+                "sources": [
+                    {"name":"Blockchain.info Pools","url":"blockchain.info","key":False,"data":"Distribution hashrate par pool mining (5 jours)"},
+                    {"name":"WhatToMine","url":"whattomine.com","key":False,"data":"Profitabilité mining BTC, Hashrate réseau, Difficulté, Block reward"},
+                ]
+            }
+        },
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+
+
+@app.get("/api/summary")
+def get_summary():
+    cg = sf(fetch_coingecko); cg_gl = sf(fetch_coingecko_global); stable = sf(fetch_stablecoins)
+    cm = sf(fetch_coinmetrics); bgr = sf(fetch_bgeometrics); bgr_h = sf(fetch_bgr_holders)
+    soso = sf(fetch_sosovalue_etf); twelve = sf(fetch_twelvedata_etf)
+    mem = sf(fetch_mempool); bc = sf(fetch_blockchair); cp = sf(fetch_coinpaprika)
+    fg = sf(fetch_fear_greed); cb = sf(fetch_coinbase)
+    kr_meta, ohlc = fetch_kraken_ohlc(); tech = compute_technicals(ohlc)
+    bci = sf(fetch_blockchain_info); cm_ext = sf(fetch_coinmetrics_extended)
+    pools = sf(fetch_mining_pools); puell = sf(fetch_puell_multiple); altme = sf(fetch_altme_ticker)
+    cm_deep = sf(fetch_coinmetrics_deep); messari = sf(fetch_messari)
+    bnf = sf(fetch_binance_futures); wtm = sf(fetch_whattomine)
+
+    price = cg.get("price_usd"); ma200 = tech.get("ma_200d")
+    mayer = round(price / ma200, 4) if price and ma200 and ma200 > 0 else None
+    lth_rp = bgr_h.get("lth_realized_price"); ma30 = tech.get("ma_30d")
+    lth_mvrv = round(price / lth_rp, 4) if price and lth_rp else None
+    sth_mvrv = round(price / ma30, 4)   if price and ma30   else None
+
+    all_data = {**cg, **cg_gl, **stable, **cm, **bgr, **bgr_h, **soso, **twelve,
+                **cm_ext, **pools, **puell, **altme, **cm_deep, **messari, **bnf, **wtm,
+                "mayer_multiple": mayer, "lth_realized_price_proxy": lth_rp,
+                "sth_realized_price_proxy": ma30, "lth_mvrv_proxy": lth_mvrv,
+                "sth_mvrv_proxy": sth_mvrv,
+                **mem, **bc, **cp, **fg, **cb, **kr_meta, **tech, **bci}
+
+    if not all_data.get("price_usd"):
+        for fb in ["price_coinbase", "kraken_close", "altme_price", "messari_price"]:
+            if all_data.get(fb):
+                all_data["price_usd"] = all_data[fb]
+                break
+
+    return {**all_data, **compute_signals(all_data), "updated_at": datetime.now(timezone.utc).isoformat()}
+
+
+@app.get("/api/derivatives")
+def get_derivatives():
+    """Endpoint agrégé — Futures/Dérivés BTC (6 sources)"""
+    bnf = sf(fetch_binance_futures)
+    krf = sf(fetch_kraken_futures)
+    bitmex = sf(fetch_bitmex)
+    hyper = sf(fetch_hyperliquid)
+    bgf = sf(fetch_bitget_futures)
+    dvol = sf(fetch_deribit_dvol)
+    bfxst = sf(fetch_bitfinex_stats)
+    rates = [v for k, v in {
+        "binance": bnf.get("bnf_funding_rate"),
+        "kraken": krf.get("krf_funding_rate"),
+        "bitmex": bitmex.get("bitmex_funding_rate"),
+        "hyperliquid": hyper.get("hyper_funding_rate"),
+        "bitget": bgf.get("bgf_funding_rate"),
+    }.items() if v is not None]
+    avg_funding = round(sum(rates) / len(rates), 6) if rates else None
+    oi_btc_sources = {
+        "binance_oi_btc": bnf.get("bnf_oi_btc"),
+        "bitmex_oi_contracts": bitmex.get("bitmex_oi_contracts"),
+    }
+    return {
+        **bnf, **krf, **bitmex, **hyper, **bgf, **dvol, **bfxst,
+        "avg_funding_rate_pct": avg_funding,
+        "funding_signal": (
+            "Bullish extrême 🔴" if avg_funding and avg_funding > 0.1
+            else "Bullish 🟡" if avg_funding and avg_funding > 0.01
+            else "Neutre 🟢" if avg_funding and avg_funding > -0.01
+            else "Bearish 🟡" if avg_funding and avg_funding > -0.1
+            else "Bearish extrême 🔴" if avg_funding is not None
+            else "—"
+        ),
+        **oi_btc_sources,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+@app.get("/api/defi")
+def get_defi():
+    """Endpoint — DeFi Bitcoin Ecosystem TVL + Analytics"""
+    defi = sf(fetch_defillama)
+    messari = sf(fetch_messari)
+    cc = sf(fetch_cryptocompare)
+    return {
+        **defi, **messari, **cc,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
