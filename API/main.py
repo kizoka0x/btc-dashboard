@@ -1951,9 +1951,14 @@ def fetch_blockchain_charts():
 # ══════════════════════════════════════════════════════════════
 @app.get("/", response_class=HTMLResponse)
 async def serve_index():
-    html_path = Path(__file__).parent / "index.html"
-    if html_path.exists():
-        return HTMLResponse(content=html_path.read_text(encoding="utf-8"))
+    # Vercel: api/main.py lives in /var/task/api/, index.html in /var/task/
+    for candidate in [
+        Path(__file__).parent.parent / "index.html",
+        Path(__file__).parent / "index.html",
+        Path("/var/task/index.html"),
+    ]:
+        if candidate.exists():
+            return HTMLResponse(content=candidate.read_text(encoding="utf-8"))
     return HTMLResponse("<h1>index.html not found</h1>", status_code=404)
 
 # ══════════════════════════════════════════════════════════════
@@ -2362,3 +2367,9 @@ def get_defi():
         **defi, **messari, **cc,
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }
+
+# ── Vercel handler (ASGI → WSGI via Mangum) ───────────────
+# Vercel @vercel/python uses WSGI. FastAPI is ASGI.
+# Mangum bridges them. Vercel looks for 'handler' in the module.
+from mangum import Mangum
+handler = Mangum(app, lifespan="off")
