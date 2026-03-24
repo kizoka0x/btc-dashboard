@@ -34,7 +34,8 @@ APIs supplémentaires v8 (+14 sources) :
   STATS (v9)     : Bitfinex Stats (positions long/short)
 """
 
-import os, time, math, requests, logging
+import os, time, math, logging
+from curl_cffi import requests
 from datetime import datetime, timezone
 from pathlib import Path
 from fastapi import FastAPI
