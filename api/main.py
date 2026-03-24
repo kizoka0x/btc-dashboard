@@ -347,6 +347,7 @@ def fetch_puell_multiple():
 # BGR / bitcoin-data.com
 # ══════════════════════════════════════════════════════════════
 def fetch_bgeometrics():
+    return {}
     global _bgr_cache
     now = time.time()
     if now - _bgr_cache["ts"] < BGR_TTL and _bgr_cache["data"]:
@@ -367,6 +368,7 @@ def fetch_bgeometrics():
     return result
 
 def fetch_bgr_holders():
+    return {}
     global _bgr_holders_cache
     now = time.time()
     if now - _bgr_holders_cache["ts"] < BGR_TTL and _bgr_holders_cache["data"]:
@@ -383,7 +385,7 @@ def fetch_bgr_holders():
     if result:
         _bgr_holders_cache = {"data": result, "ts": now}
     return result
-
+  
 # ══════════════════════════════════════════════════════════════
 # MEMPOOL.SPACE
 # ══════════════════════════════════════════════════════════════
