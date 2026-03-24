@@ -124,11 +124,17 @@ def safe(v, d=6):
         return None
 
 def get(url, params=None, timeout=9, headers=None):
+    # 🛑 --- DÉBUT DU FILTRE (MÉTHODE 1) --- 🛑
+    # On bloque silencieusement les 2 sites qui détestent Vercel
+    if "bitcoin-data.com" in url or "fapi.binance.com" in url:
+        return None
+    # 🟢 --- FIN DU FILTRE --- 🟢
+
     try:
-        # On utilise le moteur standard ultra-stable
+        # Moteur internet standard ultra-fiable
         h = {
             "Accept": "application/json", 
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36"
         }
         if headers:
             h.update(headers)
@@ -137,9 +143,10 @@ def get(url, params=None, timeout=9, headers=None):
         
         if r.status_code == 200:
             return r.json()
-        log.warning(f"GET {url} -> HTTP {r.status_code}")
-    except Exception as e:
-        log.error(f"GET {url} -> {e}")
+            
+    except Exception:
+        pass # Si un autre site plante, on l'ignore silencieusement
+        
     return None
 
 def sf(fn):
