@@ -34,8 +34,7 @@ APIs supplémentaires v8 (+14 sources) :
   STATS (v9)     : Bitfinex Stats (positions long/short)
 """
 
-import os, time, math, logging
-from curl_cffi import requests
+import os, time, math, requests, logging
 from datetime import datetime, timezone
 from pathlib import Path
 from fastapi import FastAPI
@@ -126,12 +125,15 @@ def safe(v, d=6):
 
 def get(url, params=None, timeout=9, headers=None):
     try:
-        h = {"Accept": "application/json"}
+        # On utilise le moteur standard ultra-stable
+        h = {
+            "Accept": "application/json", 
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"
+        }
         if headers:
             h.update(headers)
             
-        # L'ajout de impersonate="chrome110" est ici
-        r = requests.get(url, params=params or {}, timeout=timeout, headers=h, impersonate="chrome110")
+        r = requests.get(url, params=params or {}, timeout=timeout, headers=h)
         
         if r.status_code == 200:
             return r.json()
