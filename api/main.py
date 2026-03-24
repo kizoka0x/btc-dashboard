@@ -124,14 +124,11 @@ def safe(v, d=6):
         return None
 
 def get(url, params=None, timeout=9, headers=None):
-    # 🛑 --- DÉBUT DU FILTRE (MÉTHODE 1) --- 🛑
-    # On bloque silencieusement les 2 sites qui détestent Vercel
+    # 🛑 FILTRE ANTI-PLANTAGE (Bloque les sites qui détestent Vercel) 🛑
     if "bitcoin-data.com" in url or "fapi.binance.com" in url:
         return None
-    # 🟢 --- FIN DU FILTRE --- 🟢
 
     try:
-        # Moteur internet standard ultra-fiable
         h = {
             "Accept": "application/json", 
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36"
@@ -143,6 +140,10 @@ def get(url, params=None, timeout=9, headers=None):
         
         if r.status_code == 200:
             return r.json()
+    except Exception:
+        pass
+        
+    return None
             
     except Exception:
         pass # Si un autre site plante, on l'ignore silencieusement
