@@ -124,12 +124,12 @@ def safe(v, d=6):
         return None
 
 def get(url, params=None, timeout=9, headers=None):
-    # 🛑 On bloque les sites qui détestent Vercel
+    # Exclusion stricte des domaines identifiés comme sources de blocage IP
     if "bitcoin-data.com" in url or "fapi.binance.com" in url:
         return None
 
     try:
-        # 🟢 HACK INFAILLIBLE : On force l'activation de 'requests' ici !
+        # Importation forcée localement pour isoler le risque de NameError
         import requests 
         
         h = {
@@ -145,8 +145,8 @@ def get(url, params=None, timeout=9, headers=None):
             return r.json()
             
     except Exception as e:
-        # On enlève le silencieux : si un site plante, Vercel l'écrira dans les logs
-        print(f"Erreur sur {url}: {e}")
+        # Journalisation de l'erreur pour audit futur au lieu du 'pass' silencieux
+        print(f"Échec de la requête sur {url} : {type(e).__name__} - {e}")
         
     return None
 
