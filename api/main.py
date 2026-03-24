@@ -125,7 +125,7 @@ def safe(v, d=6):
 
 def get(url, params=None, timeout=9, headers=None):
     try:
-        h = {"Accept": "application/json", "User-Agent": "btc-analytics/7.0"}
+        h = {"Accept": "application/json", "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
         if headers:
             h.update(headers)
         r = requests.get(url, params=params or {}, timeout=timeout, headers=h)
