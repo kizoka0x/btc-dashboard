@@ -1290,6 +1290,105 @@ function renderEtf() {
       kv('Volume', d['etf_'+t+'_vol']!=null?fmtV(d['etf_'+t+'_vol']):'N/A'),
     ].join('') : '').filter(Boolean).join('')+kv('Source','TwelveData API (clé requise)','orange');
 }
+// ══════ NORMALISATION DES DONNÉES ══════════════════════════
+// Mappe les noms de champs API vers les noms attendus par le frontend
+function normalizeData(d) {
+  if (!d) return d;
+
+  // ── CoinGecko prix & marché ──
+  if (d.price_change_1d != null && d.change_24h == null)     d.change_24h = d.price_change_1d;
+  if (d.price_change_7d != null && d.change_7d == null)      d.change_7d = d.price_change_7d;
+  if (d.price_change_30d != null && d.change_30d == null)    d.change_30d = d.price_change_30d;
+  if (d.market_cap != null && d.market_cap_usd == null)      d.market_cap_usd = d.market_cap;
+  if (d.volume_usd != null && d.volume_24h_usd == null)      d.volume_24h_usd = d.volume_usd;
+  if (d.ath_pct != null && d.ath_change_pct == null)         d.ath_change_pct = d.ath_pct;
+
+  // ── ATH/ATL manquants — extraire de CoinGecko si dispo ──
+  // (ath_date, atl_usd ne sont pas retournés par l'API actuelle)
+
+  // ── Marché global ──
+  if (d.total_market_cap_usd != null && d.total_market_cap == null) d.total_market_cap = d.total_market_cap_usd;
+
+  // ── CoinPaprika ──
+  if (d.volume_24h_paprika != null && d.coinpaprika_vol == null)  d.coinpaprika_vol = d.volume_24h_paprika;
+  if (d.beta_value != null && d.coinpaprika_beta == null)         d.coinpaprika_beta = d.beta_value;
+
+  // ── Alternative.me ──
+  if (d.fear_greed_classification != null && d.fear_greed_label == null) d.fear_greed_label = d.fear_greed_classification;
+  if (d.altme_change_24h != null && d.altme_change == null)             d.altme_change = d.altme_change_24h;
+  if (d.altme_market_cap != null && d.altme_mcap == null)               d.altme_mcap = d.altme_market_cap;
+  // Fear & Greed "yesterday" — extraire du tableau history
+  if (d.fear_greed_history_7d && d.fear_greed_history_7d.length >= 2 && d.fear_greed_previous == null) {
+    d.fear_greed_previous = d.fear_greed_history_7d[1].value;
+    d.fear_greed_prev_label = d.fear_greed_history_7d[1].classification;
+  }
+
+  // ── Technique (MA / close / vwap) ──
+  if (d.ma_200d != null && d.ma200 == null)                  d.ma200 = d.ma_200d;
+  if (d.ma_30d != null && d.ma30 == null)                    d.ma30 = d.ma_30d;
+  if (d.ma_7d != null && d.ma7 == null)                      d.ma7 = d.ma_7d;
+  if (d.price_vs_ma200 != null && d.price_to_ma200 == null)  d.price_to_ma200 = d.price_vs_ma200;
+  if (d.price_vs_ma30 != null && d.price_to_ma30 == null)    d.price_to_ma30 = d.price_vs_ma30;
+  if (d.price_vs_ma7 != null && d.price_to_ma7 == null)      d.price_to_ma7 = d.price_vs_ma7;
+  if (d.kraken_close != null && d.close_latest == null)      d.close_latest = d.kraken_close;
+  if (d.kraken_vwap != null && d.vwap == null)               d.vwap = d.kraken_vwap;
+  if (d.volatility_30d_ann != null && d.volatility_30d == null) d.volatility_30d = d.volatility_30d_ann;
+
+  // ── On-Chain (CoinMetrics) ──
+  if (d.realized_cap != null && d.realized_cap_usd == null)  d.realized_cap_usd = d.realized_cap;
+
+  // ── Réseau / Mempool ──
+  if (d.pending_txs != null && d.mempool_count == null)      d.mempool_count = d.pending_txs;
+  if (d.pending_mb != null && d.mempool_size_mb == null)     d.mempool_size_mb = d.pending_mb;
+  if (d.fee_high != null && d.fee_fastest_sat == null)       d.fee_fastest_sat = d.fee_high;
+  if (d.fee_med != null && d.fee_avg_sat == null)            d.fee_avg_sat = d.fee_med;
+  if (d.fee_low != null && d.fee_eco_sat == null)            d.fee_eco_sat = d.fee_low;
+  if (d.fee_min != null && d.fee_min_sat == null)            d.fee_min_sat = d.fee_min;
+  if (d.difficulty != null && d.difficulty_t == null)         d.difficulty_t = d.difficulty / 1e12; // convert to T
+  if (d.diff_remaining_blocks != null && d.blocks_till_adjust == null) d.blocks_till_adjust = d.diff_remaining_blocks;
+
+  // ── Lightning ──
+  if (d.ln_avg_capacity_sat != null && d.ln_avg_capacity == null) d.ln_avg_capacity = d.ln_avg_capacity_sat;
+
+  // ── Blockchain.info ──
+  if (d.blockchain_blocks_today != null && d.blocks_today == null)     d.blocks_today = d.blockchain_blocks_today;
+  if (d.blockchain_miners_rev_usd != null && d.miners_revenue == null) d.miners_revenue = d.blockchain_miners_rev_usd;
+  if (d.circulating_supply != null && d.supply_btc == null)            d.supply_btc = d.circulating_supply;
+
+  // ── CoinMetrics extended ──
+  if (d.flow_in_ex_btc != null && d.exchange_inflow == null)   d.exchange_inflow = d.flow_in_ex_btc;
+  if (d.flow_out_ex_btc != null && d.exchange_outflow == null) d.exchange_outflow = d.flow_out_ex_btc;
+  if (d.flow_in_ex_btc != null && d.flow_out_ex_btc != null && d.net_flow == null)
+    d.net_flow = d.flow_in_ex_btc - d.flow_out_ex_btc;
+  if (d.roi_30d != null && d.roi_3m == null)       d.roi_3m = d.roi_30d;  // approximation
+  if (d.roi_1yr != null && d.roi_1y == null)       d.roi_1y = d.roi_1yr / 100; // convert percent to ratio
+
+  // ── On-chain deep fields ──
+  if (d.active_addresses == null && d.cm_active_addresses != null) d.active_addresses = d.cm_active_addresses;
+  if (d.tx_count == null && d.blockchain_tx_total != null)         d.tx_count = d.blockchain_tx_total;
+
+  // ── LTH/STH proxy ──
+  if (d.lth_mvrv_proxy != null && d.lth_mvrv == null)  d.lth_mvrv = d.lth_mvrv_proxy;
+  if (d.sth_mvrv_proxy != null && d.sth_mvrv == null)  d.sth_mvrv = d.sth_mvrv_proxy;
+  if (d.lth_realized_price_proxy != null && d.lth_realized == null) d.lth_realized = d.lth_realized_price_proxy;
+  if (d.sth_realized_price_proxy != null && d.sth_realized == null) d.sth_realized = d.sth_realized_price_proxy;
+
+  return d;
+}
+
+function normalizeStooq(s) {
+  if (!s) return s;
+  if (s.stooq_price != null && s.close_latest == null)       s.close_latest = s.stooq_price;
+  if (s.stooq_high_30d != null && s.high_30d == null)        s.high_30d = s.stooq_high_30d;
+  if (s.stooq_low_30d != null && s.low_30d == null)          s.low_30d = s.stooq_low_30d;
+  if (s.stooq_change_30d != null && s.perf_30d == null)      s.perf_30d = s.stooq_change_30d;
+  // Calculer open_30d et avg_vol depuis l'historique si disponible
+  if (s.stooq_history_30d && s.stooq_history_30d.length > 0) {
+    if (s.open_30d == null) s.open_30d = s.stooq_history_30d[0].close;
+    if (s.days_available == null) s.days_available = s.stooq_history_30d.length;
+  }
+  return s;
+}
 
 // ══════ LOAD DATA ════════════════════════════════════════════
 async function loadAll() {
@@ -1305,10 +1404,10 @@ async function loadAll() {
       fetch(API+'/api/sources').then(r=>r.json()),
     ]);
 
-    if(summary.status==='fulfilled') DATA = summary.value;
+    if(summary.status==='fulfilled') DATA = normalizeData(summary.value);
     if(exchanges.status==='fulfilled') EX = exchanges.value;
     if(intl.status==='fulfilled') INTL = intl.value;
-    if(stooq.status==='fulfilled') STOOQ = stooq.value;
+    if(stooq.status==='fulfilled') STOOQ = normalizeStooq(stooq.value);
     if(drv.status==='fulfilled') DRV = drv.value;
     if(defi.status==='fulfilled') DEFI = defi.value;
     if(sources.status==='fulfilled') { SOURCES_DATA = sources.value; renderSources('all'); }
