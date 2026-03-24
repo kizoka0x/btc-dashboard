@@ -1290,8 +1290,8 @@ function renderEtf() {
       kv('Volume', d['etf_'+t+'_vol']!=null?fmtV(d['etf_'+t+'_vol']):'N/A'),
     ].join('') : '').filter(Boolean).join('')+kv('Source','TwelveData API (clé requise)','orange');
 }
-// ══════ NORMALISATION DES DONNÉES ══════════════════════════
-// Mappe les noms de champs API vers les noms attendus par le frontend
+  
+// ══════ NORMALISATION DES DONNÉES v2 ══════════════════════
 function normalizeData(d) {
   if (!d) return d;
 
@@ -1303,9 +1303,6 @@ function normalizeData(d) {
   if (d.volume_usd != null && d.volume_24h_usd == null)      d.volume_24h_usd = d.volume_usd;
   if (d.ath_pct != null && d.ath_change_pct == null)         d.ath_change_pct = d.ath_pct;
 
-  // ── ATH/ATL manquants — extraire de CoinGecko si dispo ──
-  // (ath_date, atl_usd ne sont pas retournés par l'API actuelle)
-
   // ── Marché global ──
   if (d.total_market_cap_usd != null && d.total_market_cap == null) d.total_market_cap = d.total_market_cap_usd;
 
@@ -1314,10 +1311,12 @@ function normalizeData(d) {
   if (d.beta_value != null && d.coinpaprika_beta == null)         d.coinpaprika_beta = d.beta_value;
 
   // ── Alternative.me ──
-  if (d.fear_greed_classification != null && d.fear_greed_label == null) d.fear_greed_label = d.fear_greed_classification;
-  if (d.altme_change_24h != null && d.altme_change == null)             d.altme_change = d.altme_change_24h;
-  if (d.altme_market_cap != null && d.altme_mcap == null)               d.altme_mcap = d.altme_market_cap;
-  // Fear & Greed "yesterday" — extraire du tableau history
+  if (d.fear_greed_classification != null && d.fear_greed_label == null)
+    d.fear_greed_label = d.fear_greed_classification;
+  if (d.altme_change_24h != null && d.altme_change == null)
+    d.altme_change = d.altme_change_24h;
+  if (d.altme_market_cap != null && d.altme_mcap == null)
+    d.altme_mcap = d.altme_market_cap;
   if (d.fear_greed_history_7d && d.fear_greed_history_7d.length >= 2 && d.fear_greed_previous == null) {
     d.fear_greed_previous = d.fear_greed_history_7d[1].value;
     d.fear_greed_prev_label = d.fear_greed_history_7d[1].classification;
@@ -1344,7 +1343,7 @@ function normalizeData(d) {
   if (d.fee_med != null && d.fee_avg_sat == null)            d.fee_avg_sat = d.fee_med;
   if (d.fee_low != null && d.fee_eco_sat == null)            d.fee_eco_sat = d.fee_low;
   if (d.fee_min != null && d.fee_min_sat == null)            d.fee_min_sat = d.fee_min;
-  if (d.difficulty != null && d.difficulty_t == null)         d.difficulty_t = d.difficulty / 1e12; // convert to T
+  if (d.difficulty != null && d.difficulty_t == null)         d.difficulty_t = d.difficulty / 1e12;
   if (d.diff_remaining_blocks != null && d.blocks_till_adjust == null) d.blocks_till_adjust = d.diff_remaining_blocks;
 
   // ── Lightning ──
@@ -1355,23 +1354,65 @@ function normalizeData(d) {
   if (d.blockchain_miners_rev_usd != null && d.miners_revenue == null) d.miners_revenue = d.blockchain_miners_rev_usd;
   if (d.circulating_supply != null && d.supply_btc == null)            d.supply_btc = d.circulating_supply;
 
-  // ── CoinMetrics extended ──
+  // ── CoinMetrics extended — flux exchanges ──
   if (d.flow_in_ex_btc != null && d.exchange_inflow == null)   d.exchange_inflow = d.flow_in_ex_btc;
   if (d.flow_out_ex_btc != null && d.exchange_outflow == null) d.exchange_outflow = d.flow_out_ex_btc;
   if (d.flow_in_ex_btc != null && d.flow_out_ex_btc != null && d.net_flow == null)
     d.net_flow = d.flow_in_ex_btc - d.flow_out_ex_btc;
-  if (d.roi_30d != null && d.roi_3m == null)       d.roi_3m = d.roi_30d;  // approximation
-  if (d.roi_1yr != null && d.roi_1y == null)       d.roi_1y = d.roi_1yr / 100; // convert percent to ratio
+  if (d.roi_1yr != null && d.roi_1y == null)  d.roi_1y = d.roi_1yr / 100;
 
-  // ── On-chain deep fields ──
-  if (d.active_addresses == null && d.cm_active_addresses != null) d.active_addresses = d.cm_active_addresses;
-  if (d.tx_count == null && d.blockchain_tx_total != null)         d.tx_count = d.blockchain_tx_total;
+  // ── Adresses / TX on-chain ──
+  if (d.cm_active_addresses != null && d.active_addresses == null) d.active_addresses = d.cm_active_addresses;
+  if (d.tx_transfer_cnt != null && d.tx_count == null)             d.tx_count = d.tx_transfer_cnt;
+  if (d.adr_bal_cnt != null && d.addresses_with_balance == null)   d.addresses_with_balance = d.adr_bal_cnt;
+
+  // ── CoinMetrics hashrate ──
+  if (d.cm_hashrate_ths != null && d.hash_rate == null) d.hash_rate = d.cm_hashrate_ths;
+
+  // ── CoinMetrics deep — certains champs null dans l'API ──
+  // supply_active_1yr depuis coinmetrics basique
+  if (d.supply_active_1yr != null && d.cm_sply_act_1yr_btc == null) d.cm_sply_act_1yr_btc = d.supply_active_1yr;
+  if (d.volume_onchain_usd != null && d.cm_tx_tfr_val_adj_usd == null) d.cm_tx_tfr_val_adj_usd = d.volume_onchain_usd;
+  if (d.nvt != null && d.cm_nvt_adj == null) d.cm_nvt_adj = d.nvt;
+  if (d.circulating_supply != null && d.cm_supply_current == null) d.cm_supply_current = d.circulating_supply;
+  if (d.difficulty != null && d.cm_difficulty_mean == null) d.cm_difficulty_mean = d.difficulty;
+
+  // ── Supply on exchanges ──
+  if (d.sply_ex_btc != null && d.supply_on_exchanges == null) d.supply_on_exchanges = d.sply_ex_btc;
 
   // ── LTH/STH proxy ──
   if (d.lth_mvrv_proxy != null && d.lth_mvrv == null)  d.lth_mvrv = d.lth_mvrv_proxy;
   if (d.sth_mvrv_proxy != null && d.sth_mvrv == null)  d.sth_mvrv = d.sth_mvrv_proxy;
   if (d.lth_realized_price_proxy != null && d.lth_realized == null) d.lth_realized = d.lth_realized_price_proxy;
   if (d.sth_realized_price_proxy != null && d.sth_realized == null) d.sth_realized = d.sth_realized_price_proxy;
+
+  // ── CoinPaprika OHLCV (depuis /api/network cp_ohlcv) ──
+  if (d.cp_ohlcv_high != null && d.coinpaprika_high == null) d.coinpaprika_high = d.cp_ohlcv_high;
+  if (d.cp_ohlcv_low != null && d.coinpaprika_low == null)   d.coinpaprika_low = d.cp_ohlcv_low;
+  if (d.cp_ohlcv_open != null && d.coinpaprika_open == null) d.coinpaprika_open = d.cp_ohlcv_open;
+  if (d.cp_ohlcv_vol != null && d.coinpaprika_vol == null)   d.coinpaprika_vol = d.cp_ohlcv_vol;
+
+  // ── Transactions 24h ──
+  if (d.transactions_24h != null && d.tx_24h == null) d.tx_24h = d.transactions_24h;
+
+  // ── Volume on-chain ──
+  if (d.bc_vol_24h_sat != null && d.volume_24h_usd_onchain == null)
+    d.volume_24h_usd_onchain = d.bc_vol_24h_sat / 1e8 * (d.price_usd || 0);
+
+  // ── Fee total ──
+  if (d.fee_tot_btc_cm != null && d.fee_total_btc == null) d.fee_total_btc = d.fee_tot_btc_cm;
+
+  // ── Supply profit % proxy ──
+  if (d.sth_mvrv_proxy != null && d.supply_profit_pct == null && d.sth_mvrv_proxy > 1)
+    d.supply_profit_pct = ((d.sth_mvrv_proxy - 1) / d.sth_mvrv_proxy) * 100;
+
+  // ── Adjusted transfer vol ──
+  if (d.volume_onchain_usd != null && d.transfer_vol_usd == null)  d.transfer_vol_usd = d.volume_onchain_usd;
+  if (d.volume_onchain_usd != null && d.adjusted_vol_usd == null)  d.adjusted_vol_usd = d.volume_onchain_usd;
+
+  // ── Supply active ──
+  if (d.supply_active_1yr != null && d.supply_1y == null)  d.supply_1y = d.supply_active_1yr;
+  if (d.supply_active_30d != null && d.supply_1d == null)  d.supply_1d = d.supply_active_30d;
 
   return d;
 }
@@ -1382,7 +1423,6 @@ function normalizeStooq(s) {
   if (s.stooq_high_30d != null && s.high_30d == null)        s.high_30d = s.stooq_high_30d;
   if (s.stooq_low_30d != null && s.low_30d == null)          s.low_30d = s.stooq_low_30d;
   if (s.stooq_change_30d != null && s.perf_30d == null)      s.perf_30d = s.stooq_change_30d;
-  // Calculer open_30d et avg_vol depuis l'historique si disponible
   if (s.stooq_history_30d && s.stooq_history_30d.length > 0) {
     if (s.open_30d == null) s.open_30d = s.stooq_history_30d[0].close;
     if (s.days_available == null) s.days_available = s.stooq_history_30d.length;
@@ -1390,11 +1430,12 @@ function normalizeStooq(s) {
   return s;
 }
 
+
 // ══════ LOAD DATA ════════════════════════════════════════════
 async function loadAll() {
   document.getElementById('h-upd').textContent = 'Chargement...';
   try {
-    const [summary, exchanges, intl, stooq, drv, defi, sources] = await Promise.allSettled([
+    const [summary, exchanges, intl, stooq, drv, defi, sources, network, lightning] = await Promise.allSettled([
       fetch(API+'/api/summary').then(r=>r.json()),
       fetch(API+'/api/exchanges').then(r=>r.json()),
       fetch(API+'/api/international').then(r=>r.json()),
@@ -1402,15 +1443,39 @@ async function loadAll() {
       fetch(API+'/api/derivatives').then(r=>r.json()),
       fetch(API+'/api/defi').then(r=>r.json()),
       fetch(API+'/api/sources').then(r=>r.json()),
+      fetch(API+'/api/network').then(r=>r.json()),
+      fetch(API+'/api/lightning').then(r=>r.json()),
     ]);
 
-    if(summary.status==='fulfilled') DATA = normalizeData(summary.value);
+    if(summary.status==='fulfilled') DATA = summary.value;
     if(exchanges.status==='fulfilled') EX = exchanges.value;
     if(intl.status==='fulfilled') INTL = intl.value;
     if(stooq.status==='fulfilled') STOOQ = normalizeStooq(stooq.value);
     if(drv.status==='fulfilled') DRV = drv.value;
     if(defi.status==='fulfilled') DEFI = defi.value;
     if(sources.status==='fulfilled') { SOURCES_DATA = sources.value; renderSources('all'); }
+
+    // Merge network data into DATA (réseau, blockchair, bitnodes, pools, etc.)
+    if(network.status==='fulfilled') {
+      const net = network.value;
+      NET = net;
+      // Merge all network fields into DATA so render functions can find them
+      for (const [k, v] of Object.entries(net)) {
+        if (DATA[k] == null && v != null) DATA[k] = v;
+      }
+    }
+
+    // Merge lightning data into DATA
+    if(lightning.status==='fulfilled') {
+      const ln = lightning.value;
+      LN = ln;
+      for (const [k, v] of Object.entries(ln)) {
+        if (DATA[k] == null && v != null) DATA[k] = v;
+      }
+    }
+
+    // Normalize ALL data after merging
+    DATA = normalizeData(DATA);
 
     // Fetch alerts separately
     try {
@@ -1448,6 +1513,7 @@ async function loadAll() {
     document.getElementById('loader').style.display = 'none';
   }
 }
+
 
 // ══════ INIT ════════════════════════════════════════════════
 loadAll();
