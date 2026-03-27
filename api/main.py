@@ -1671,39 +1671,6 @@ def fetch_deribit_dvol():
     return result
 
 
-def fetch_bitfinex_stats():
-    """Bitfinex Stats — Positions long/short BTC (gratuit)"""
-    global _bfxstats_cache
-    now = time.time()
-    if now - _bfxstats_cache["ts"] < 600 and _bfxstats_cache["data"]:
-        return _bfxstats_cache["data"]
-    result = {}
-    try:
-        # Positions long sur BTCUSD
-        r_long = requests.get(
-            "https://api-pub.bitfinex.com/v2/stats1/pos.size:1d:tBTCUSD:long/last",
-            timeout=8, headers={"User-Agent": "btc-analytics/9.0"})
-        if r_long.status_code == 200:
-            data = r_long.json()
-            if isinstance(data, list) and len(data) >= 2:
-                result["bfx_longs_btc"] = safe(data[1], 2)
-        # Positions short sur BTCUSD
-        r_short = requests.get(
-            "https://api-pub.bitfinex.com/v2/stats1/pos.size:1d:tBTCUSD:short/last",
-            timeout=8, headers={"User-Agent": "btc-analytics/9.0"})
-        if r_short.status_code == 200:
-            data = r_short.json()
-            if isinstance(data, list) and len(data) >= 2:
-                result["bfx_shorts_btc"] = safe(data[1], 2)
-        # Calcul ratio
-        lg = result.get("bfx_longs_btc"); sh = result.get("bfx_shorts_btc")
-        if lg and sh and sh > 0:
-            result["bfx_ls_ratio"] = safe(lg / sh, 4)
-    except Exception as e:
-        log.warning(f"bfx_stats: {e}")
-    if result:
-        _bfxstats_cache = {"data": result, "ts": now}
-    return result
 
 
 # ══════════════════════════════════════════════════════════════
@@ -2350,7 +2317,6 @@ def get_derivatives():
     hyper = sf(fetch_hyperliquid)
     bgf = sf(fetch_bitget_futures)
     dvol = sf(fetch_deribit_dvol)
-    bfxst = sf(fetch_bitfinex_stats)
     # Calcul du funding rate moyen agrégé
     rates = [v for k, v in {
         "binance": bnf.get("bnf_funding_rate"),
@@ -2366,7 +2332,7 @@ def get_derivatives():
         "bitmex_oi_contracts": bitmex.get("bitmex_oi_contracts"),
     }
     return {
-        **bnf, **krf, **bitmex, **hyper, **bgf, **dvol, **bfxst,
+        **bnf, **krf, **bitmex, **hyper, **bgf, **dvol,
         "avg_funding_rate_pct": avg_funding,
         "funding_signal": (
             "Bullish extrême 🔴" if avg_funding and avg_funding > 0.1
