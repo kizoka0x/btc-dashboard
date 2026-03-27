@@ -364,10 +364,10 @@ def fetch_bgeometrics():
     result = {}
     B = BGR_BASE
     for name, url, key, field in [
-        ("asopr",      f"{B}/api-block/v1/asopr/1",       "asopr",      "asopr"),
-        ("sopr_block", f"{B}/api-block/v1/sopr-block/1",  "soprBlock",  "sopr_block"),
-        ("nrpl_usd",   f"{B}/api-block/v1/nrpl-usd/1",   "nrplUsd",    "nrpl_usd"),
-        ("nrpl_btc",   f"{B}/api-block/v1/nrpl-btc/1",   "nrplBtc",    "nrpl_btc"),
+        ("asopr",      f"{B}/api/v1/asopr/1",       "asopr",      "asopr"),
+        ("sopr",       f"{B}/api/v1/sopr/1",        "sopr",       "sopr_block"),
+        ("nrpl_usd",   f"{B}/api/v1/nrpl-usd/1",    "nrplUsd",    "nrpl_usd"),
+        ("nrpl_btc",   f"{B}/api/v1/nrpl-btc/1",    "nrplBtc",    "nrpl_btc"),
     ]:
         d = get(url)
         if d and isinstance(d, dict):
@@ -382,12 +382,12 @@ def fetch_bgr_holders():
     if now - _bgr_holders_cache["ts"] < BGR_TTL and _bgr_holders_cache["data"]:
         return _bgr_holders_cache["data"]
     result = {}
-    d = get(f"{BGR_BASE}/api-block/v1/btc-price/1")
+    d = get(f"{BGR_BASE}/api/v1/btc-price/1")
     if d and isinstance(d, dict):
         rp = d.get("realizedPrice") or d.get("realized_price") or d.get("btcPrice")
         if rp:
             result["lth_realized_price"] = safe(rp, 2)
-    d3 = get(f"{BGR_BASE}/api-block/v1/btc-1000/1")
+    d3 = get(f"{BGR_BASE}/api/v1/btc-1000/1")
     if d3 and isinstance(d3, dict):
         result["whale_1000_count"] = safe(d3.get("btc1000"), 0)
     if result:
@@ -1479,48 +1479,45 @@ def compute_signals(d):
 # ══════════════════════════════════════════════════════════════
 
 def fetch_binance_futures():
-    """Binance USDT-M Futures (FAPI) — Funding rate, OI, L/S ratio"""
+    """Bybit USDT-M Futures (via alias bnf_) — Funding rate, OI, L/S ratio"""
     global _bnf_cache
     now = time.time()
     if now - _bnf_cache["ts"] < 60 and _bnf_cache["data"]:
         return _bnf_cache["data"]
     result = {}
-    # Mark price + funding rate
-    d = get("https://fapi.binance.com/fapi/v1/premiumIndex", {"symbol": "BTCUSDT"})
-    if d:
-        fr = d.get("lastFundingRate")
+    
+    # 1. Tickers (Price, Funding Rate, Open Interest, Volume)
+    d = get("https://api.bybit.com/v5/market/tickers", {"category": "linear", "symbol": "BTCUSDT"})
+    if d and d.get("result", {}).get("list"):
+        data = d["result"]["list"][0]
+        fr = data.get("fundingRate")
         result.update({
-            "bnf_mark_price":   safe(d.get("markPrice"), 2),
-            "bnf_index_price":  safe(d.get("indexPrice"), 2),
+            "bnf_price":        safe(data.get("lastPrice"), 2),
+            "bnf_mark_price":   safe(data.get("markPrice"), 2),
+            "bnf_index_price":  safe(data.get("indexPrice"), 2),
             "bnf_funding_rate": safe(float(fr)*100 if fr else None, 6),
+            "bnf_oi_btc":       safe(data.get("openInterest"), 2),
+            "bnf_vol_usd":      safe(data.get("turnover24h"), 2),
+            "bnf_change_24h":   safe(float(data.get("price24hPcnt", 0))*100, 4),
+            "bnf_high_24h":     safe(data.get("highPrice24h"), 2),
+            "bnf_low_24h":      safe(data.get("lowPrice24h"), 2),
         })
-    # Open interest (BTC)
-    d2 = get("https://fapi.binance.com/fapi/v1/openInterest", {"symbol": "BTCUSDT"})
-    if d2:
-        result["bnf_oi_btc"] = safe(d2.get("openInterest"), 2)
-    # 24h ticker
-    d3 = get("https://fapi.binance.com/fapi/v1/ticker/24hr", {"symbol": "BTCUSDT"})
-    if d3:
-        result.update({
-            "bnf_price":      safe(d3.get("lastPrice"), 2),
-            "bnf_vol_usd":    safe(d3.get("quoteVolume"), 0),
-            "bnf_change_24h": safe(d3.get("priceChangePercent"), 4),
-            "bnf_high_24h":   safe(d3.get("highPrice"), 2),
-            "bnf_low_24h":    safe(d3.get("lowPrice"), 2),
-        })
-    # Global Long/Short ratio
-    d4 = get("https://fapi.binance.com/fapi/v1/globalLongShortAccountRatio",
-             {"symbol": "BTCUSDT", "period": "5m", "limit": "1"})
-    if d4 and isinstance(d4, list) and d4:
-        row = d4[0]
-        ls = row.get("longShortRatio")
-        la = row.get("longAccount"); sa = row.get("shortAccount")
-        result.update({
-            "bnf_ls_ratio":  safe(ls, 4),
-            "bnf_long_pct":  safe(float(la)*100 if la else None, 2),
-            "bnf_short_pct": safe(float(sa)*100 if sa else None, 2),
-        })
-    if result.get("bnf_mark_price"):
+
+    # 2. Long/Short Ratio
+    d2 = get("https://api.bybit.com/v5/market/account-ratio", {"category": "linear", "symbol": "BTCUSDT", "period": "5min", "limit": "1"})
+    if d2 and d2.get("result", {}).get("list"):
+        row = d2["result"]["list"][0]
+        la = row.get("buyRatio")
+        sa = row.get("sellRatio")
+        if la and sa:
+            ls = float(la) / float(sa) if float(sa) > 0 else None
+            result.update({
+                "bnf_ls_ratio":  safe(ls, 4),
+                "bnf_long_pct":  safe(float(la)*100, 2),
+                "bnf_short_pct": safe(float(sa)*100, 2),
+            })
+    
+    if result.get("bnf_mark_price") or result.get("bnf_price"):
         _bnf_cache = {"data": result, "ts": now}
     return result
 
