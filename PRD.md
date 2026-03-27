@@ -49,8 +49,8 @@ Stooq CSV, CryptoCompare (via OKX Klines)
 SoSoValue, TwelveData
 
 ## Clés API Utilisateur
-- SOSOVALUE_KEY: SOSO-486d78fe180c417e91c3d0a0894c36ea
-- TWELVE_DATA_KEY: eb28a9e2191d40feafbaafebd4f9429c
+- SOSOVALUE_KEY: [Renseigné dans Vercel Variables d'environnement]
+- TWELVE_DATA_KEY: [Renseigné dans Vercel Variables d'environnement]
 
 ## Onglets Frontend (13)
 Dashboard | Marché | On-Chain | Technique | Réseau | Lightning | Exchanges USD | International | ETF | Dérivés | DeFi/Analytics | Alertes | Sources (70)

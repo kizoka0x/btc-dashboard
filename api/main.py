@@ -357,7 +357,6 @@ def fetch_puell_multiple():
 # BGR / bitcoin-data.com
 # ══════════════════════════════════════════════════════════════
 def fetch_bgeometrics():
-    return {}
     global _bgr_cache
     now = time.time()
     if now - _bgr_cache["ts"] < BGR_TTL and _bgr_cache["data"]:
@@ -378,7 +377,6 @@ def fetch_bgeometrics():
     return result
 
 def fetch_bgr_holders():
-    return {}
     global _bgr_holders_cache
     now = time.time()
     if now - _bgr_holders_cache["ts"] < BGR_TTL and _bgr_holders_cache["data"]:
@@ -765,7 +763,7 @@ def fetch_stooq_history():
         return _stooq_cache.get("data", {})
 
 # ══════════════════════════════════════════════════════════════
-# EXCHANGES USD (20 sources)
+# EXCHANGES USD (28 sources)
 # ══════════════════════════════════════════════════════════════
 def fetch_binance():
     d = get("https://api.binance.com/api/v3/ticker/24hr", {"symbol": "BTCUSDT"})
