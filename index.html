@@ -351,12 +351,12 @@ td { padding: 7px 10px; white-space: nowrap; }
   <div id="s-derivatifs" class="screen">
     <div class="grid-4" style="margin-bottom:12px">
       <div class="card metric-big"><div class="val orange" id="drv-funding">---</div><div class="lbl">Funding Rate Moyen</div><div class="sub">% / 8h agrégé</div></div>
-      <div class="card metric-big"><div class="val" id="drv-ls" style="color:var(--text)">---</div><div class="lbl">Ratio Long/Short</div><div class="sub">Binance Global</div></div>
-      <div class="card metric-big"><div class="val blue" id="drv-oi">---</div><div class="lbl">Open Interest BTC</div><div class="sub">Binance Futures</div></div>
+      <div class="card metric-big"><div class="val" id="drv-ls" style="color:var(--text)">---</div><div class="lbl">Ratio Long/Short</div><div class="sub">Bybit Global</div></div>
+      <div class="card metric-big"><div class="val blue" id="drv-oi">---</div><div class="lbl">Open Interest BTC</div><div class="sub">Bybit Futures</div></div>
       <div class="card metric-big"><div class="val purple" id="drv-dvol">---</div><div class="lbl">Bitcoin DVol</div><div class="sub">Deribit Volatility Index</div></div>
     </div>
     <div class="grid-3">
-      <div class="card"><div class="section-title" style="margin-top:0">Binance USDT-M Futures (FAPI)</div><div id="drv-binance"></div></div>
+      <div class="card"><div class="section-title" style="margin-top:0">Bybit USDT-M Futures</div><div id="drv-binance"></div></div>
       <div class="card"><div class="section-title" style="margin-top:0">Kraken Futures — PF_XBTUSD</div><div id="drv-kraken"></div></div>
       <div class="card"><div class="section-title" style="margin-top:0">BitMEX — XBTUSD Perpetual</div><div id="drv-bitmex"></div></div>
     </div>
@@ -676,9 +676,9 @@ function renderOnchain() {
     kv('Longs BTC (Bitfinex)', d.bfx_longs_btc!=null?Number(d.bfx_longs_btc).toFixed(2)+' BTC':'N/A', 'pos'),
     kv('Shorts BTC (Bitfinex)', d.bfx_shorts_btc!=null?Number(d.bfx_shorts_btc).toFixed(2)+' BTC':'N/A', 'neg'),
     kv('Ratio L/S', d.bfx_ls_ratio!=null?Number(d.bfx_ls_ratio).toFixed(3):'N/A', d.bfx_ls_ratio>1?'pos':'neg'),
-    kv('Longs/Shorts Binance', d.bnf_long_pct!=null?`${Number(d.bnf_long_pct).toFixed(1)}% / ${Number(d.bnf_short_pct).toFixed(1)}%`:'N/A'),
+    kv('Longs/Shorts Bybit', d.bnf_long_pct!=null?`${Number(d.bnf_long_pct).toFixed(1)}% / ${Number(d.bnf_short_pct).toFixed(1)}%`:'N/A'),
     kv('Signal L/S', d.bnf_ls_ratio>1.1?'Surbull 🔴':d.bnf_ls_ratio<0.9?'Overbear 🔵':'Neutre 🟢'),
-    kv('Source', 'Bitfinex Stats + Binance FAPI', 'blue'),
+    kv('Source', 'Bitfinex Stats + Bybit API', 'blue'),
   ].join('');
 
   document.getElementById('oc-dvol').innerHTML = [
@@ -1055,7 +1055,7 @@ function renderDerivatives() {
     kv('Longs %', drv.bnf_long_pct!=null?Number(drv.bnf_long_pct).toFixed(1)+'%':'N/A'),
     kv('Shorts %', drv.bnf_short_pct!=null?Number(drv.bnf_short_pct).toFixed(1)+'%':'N/A'),
     kv('Variation 24h', drv.bnf_change_24h!=null?fmtP(drv.bnf_change_24h):'N/A'),
-    kv('Source', 'Binance FAPI', 'blue'),
+    kv('Source', 'Bybit API', 'blue'),
   ].join('');
 
   document.getElementById('drv-kraken').innerHTML = [
