@@ -220,7 +220,7 @@ td { padding: 7px 10px; white-space: nowrap; }
     </div>
     <div class="grid-3" style="margin-top:12px">
       <div class="card"><div class="section-title" style="margin-top:0">CoinMetrics Deep — Adresses & NVT</div><div id="oc-deep"></div></div>
-      <div class="card"><div class="section-title" style="margin-top:0">Bitfinex — Positions Long/Short</div><div id="oc-positions"></div></div>
+      <div class="card"><div class="section-title" style="margin-top:0">Bybit — Positions Long/Short</div><div id="oc-positions"></div></div>
       <div class="card"><div class="section-title" style="margin-top:0">Deribit — Volatilité Implicite (DVol)</div><div id="oc-dvol"></div></div>
     </div>
   </div>
@@ -363,7 +363,7 @@ td { padding: 7px 10px; white-space: nowrap; }
     <div class="grid-3" style="margin-top:12px">
       <div class="card"><div class="section-title" style="margin-top:0">Hyperliquid DEX (décentralisé)</div><div id="drv-hyper"></div></div>
       <div class="card"><div class="section-title" style="margin-top:0">Bitget USDT-Futures</div><div id="drv-bitget"></div></div>
-      <div class="card"><div class="section-title" style="margin-top:0">Bitfinex Stats — Positions</div><div id="drv-bfxstats"></div></div>
+      <div class="card"><div class="section-title" style="margin-top:0">Deribit & Funding Stats</div><div id="drv-bfxstats"></div></div>
     </div>
     <div class="card" style="margin-top:12px;background:rgba(247,147,26,.05);border-color:rgba(247,147,26,.2)">
       <div style="font-size:11px;color:var(--text2);line-height:1.8">
@@ -629,9 +629,9 @@ function renderOnchain() {
   ].join('');
 
   document.getElementById('oc-roi').innerHTML = [
-    kv('ROI 3 mois', d.roi_3m!=null?fmtP(d.roi_3m*100):'N/A'),
-    kv('ROI 6 mois', d.roi_6m!=null?fmtP(d.roi_6m*100):'N/A'),
-    kv('ROI 1 an', d.roi_1y!=null?fmtP(d.roi_1y*100):'N/A'),
+    kv('Perf 30 jours', d.perf_30d!=null?fmtP(d.perf_30d):'N/A'),
+    kv('Perf 1 an', d.messari_chg_1y!=null?fmtP(d.messari_chg_1y):'N/A'),
+    kv('ROI 1an (CM)', d.roi_1y!=null?fmtP(d.roi_1y*100):'Premium CM'),
     kv('Miners Revenue', d.miners_revenue!=null?'$'+fmtV(d.miners_revenue):'N/A'),
     kv('Récompense bloc actuelle', '3.125 BTC'),
     kv('Prochain halving ~', '2028'),
@@ -665,20 +665,19 @@ function renderOnchain() {
   // Nouvelles cartes v9
   document.getElementById('oc-deep').innerHTML = [
     kv('Adresses actives', d.cm_active_addresses!=null?fmt(d.cm_active_addresses):'N/A', 'green'),
-    kv('NVT Ratio ajusté', d.cm_nvt_adj!=null?Number(d.cm_nvt_adj).toFixed(2):'N/A', d.cm_nvt_adj>90?'neg':d.cm_nvt_adj<30?'pos':''),
-    kv('Supply active 1an', d.cm_sply_act_1yr_btc!=null?fmtV(d.cm_sply_act_1yr_btc)+' BTC':'N/A'),
+    kv('NVT Ratio calculé', d.cm_nvt_adj!=null?Number(d.cm_nvt_adj).toFixed(2):'N/A', d.cm_nvt_adj>90?'neg':d.cm_nvt_adj<30?'pos':''),
+    kv('Supply active 1an', d.cm_sply_act_1yr_btc!=null?fmtV(d.cm_sply_act_1yr_btc)+' BTC':'Premium CM'),
     kv('Vol transferts adj', d.cm_tx_tfr_val_adj_usd!=null?'$'+fmtV(d.cm_tx_tfr_val_adj_usd):'N/A'),
     kv('Supply actuelle', d.cm_supply_current!=null?fmtV(d.cm_supply_current)+' BTC':'N/A'),
-    kv('Source', 'CoinMetrics Community', 'blue'),
+    kv('Source', 'CoinMetrics + Calcul proxy', 'blue'),
   ].join('');
 
   document.getElementById('oc-positions').innerHTML = [
-    kv('Longs BTC (Bitfinex)', d.bfx_longs_btc!=null?Number(d.bfx_longs_btc).toFixed(2)+' BTC':'N/A', 'pos'),
-    kv('Shorts BTC (Bitfinex)', d.bfx_shorts_btc!=null?Number(d.bfx_shorts_btc).toFixed(2)+' BTC':'N/A', 'neg'),
-    kv('Ratio L/S', d.bfx_ls_ratio!=null?Number(d.bfx_ls_ratio).toFixed(3):'N/A', d.bfx_ls_ratio>1?'pos':'neg'),
-    kv('Longs/Shorts Bybit', d.bnf_long_pct!=null?`${Number(d.bnf_long_pct).toFixed(1)}% / ${Number(d.bnf_short_pct).toFixed(1)}%`:'N/A'),
+    kv('Longs Bybit (%)', d.bnf_long_pct!=null?Number(d.bnf_long_pct).toFixed(1)+'%':'N/A', 'pos'),
+    kv('Shorts Bybit (%)', d.bnf_short_pct!=null?Number(d.bnf_short_pct).toFixed(1)+'%':'N/A', 'neg'),
+    kv('Ratio L/S Bybit', d.bnf_ls_ratio!=null?Number(d.bnf_ls_ratio).toFixed(3):'N/A', d.bnf_ls_ratio>1?'pos':'neg'),
     kv('Signal L/S', d.bnf_ls_ratio>1.1?'Surbull 🔴':d.bnf_ls_ratio<0.9?'Overbear 🔵':'Neutre 🟢'),
-    kv('Source', 'Bitfinex Stats + Bybit API', 'blue'),
+    kv('Source', 'Bybit Linear API', 'blue'),
   ].join('');
 
   document.getElementById('oc-dvol').innerHTML = [
@@ -1372,8 +1371,15 @@ function normalizeData(d) {
   // ── CoinMetrics deep — certains champs null dans l'API ──
   // supply_active_1yr depuis coinmetrics basique
   if (d.supply_active_1yr != null && d.cm_sply_act_1yr_btc == null) d.cm_sply_act_1yr_btc = d.supply_active_1yr;
-  if (d.volume_onchain_usd != null && d.cm_tx_tfr_val_adj_usd == null) d.cm_tx_tfr_val_adj_usd = d.volume_onchain_usd;
+  
+  let calculated_vol = null;
+  if (d.bc_vol_24h_sat && d.price_usd) calculated_vol = (d.bc_vol_24h_sat / 1e8) * d.price_usd;
+  if (d.volume_onchain_usd != null) d.cm_tx_tfr_val_adj_usd = d.volume_onchain_usd;
+  else if (calculated_vol) d.cm_tx_tfr_val_adj_usd = calculated_vol;
+
   if (d.nvt != null && d.cm_nvt_adj == null) d.cm_nvt_adj = d.nvt;
+  else if (d.market_cap_usd && d.cm_tx_tfr_val_adj_usd) d.cm_nvt_adj = d.market_cap_usd / d.cm_tx_tfr_val_adj_usd;
+
   if (d.circulating_supply != null && d.cm_supply_current == null) d.cm_supply_current = d.circulating_supply;
   if (d.difficulty != null && d.cm_difficulty_mean == null) d.cm_difficulty_mean = d.difficulty;
 
